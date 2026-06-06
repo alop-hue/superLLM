@@ -1,0 +1,39 @@
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import Optional
+
+
+@dataclass
+class Provider:
+    name: str
+    provider_type: str
+    is_enabled: bool = True
+    priority: int = 0
+    base_url: Optional[str] = None
+    default_model: Optional[str] = None
+    config: dict = field(default_factory=dict)
+    health_status: Optional[bool] = None
+
+
+class ProviderRegistry(ABC):
+    @abstractmethod
+    async def get_providers(self) -> list[Provider]:
+        ...
+
+    @abstractmethod
+    async def get_provider(self, name: str) -> Optional[Provider]:
+        ...
+
+    @abstractmethod
+    async def add_provider(self, provider: Provider) -> Provider:
+        ...
+
+    @abstractmethod
+    async def remove_provider(self, name: str) -> bool:
+        ...
+
+    @abstractmethod
+    async def update_provider(self, provider: Provider) -> Optional[Provider]:
+        ...

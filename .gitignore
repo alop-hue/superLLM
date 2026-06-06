@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# Environment
+.env
+*.local
+
+# Models
+*.gguf
+models/*.gguf
+
+# Node / UI
+ui/node_modules/
+ui/dist/
+ui/.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+*.log.*
+
+# Database
+*.db
+*.sqlite
+
+# Runtime
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
