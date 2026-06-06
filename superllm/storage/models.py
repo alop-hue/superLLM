@@ -95,6 +95,7 @@ class Conversation(Base):
             "model": self.model,
             "provider": self.provider,
             "mode": self.mode,
+            "message_count": len(self.messages) if hasattr(self, "messages") and self.messages is not None else 0,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

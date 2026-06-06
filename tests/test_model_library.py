@@ -14,7 +14,7 @@ def test_search_llama():
 
 
 def test_get_model_exists():
-    card = ModelLibrary.get_model("llama-3.2-1b")
+    card = ModelLibrary.get_model("llama3.2-1b")
     assert card is not None
     assert card.parameter_count == "1.24B"
     assert card.context_length == 8192

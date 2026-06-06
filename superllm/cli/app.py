@@ -3,6 +3,7 @@ from __future__ import annotations
 import typer
 from rich.console import Console
 
+from superllm.cli.run import run_cmd
 from superllm.cli.serve import serve_cmd
 from superllm.cli.model import (
     pull_cmd,
@@ -53,6 +54,9 @@ app.command("remove")(remove_cmd)
 app.command("list", help="List installed models")(list_cmd)
 app.command("show", help="Show model details")(show_cmd)
 app.command("library", help="Browse the model library")(library_cmd)
+
+# Run command
+app.command("run", help="Start an interactive chat with a model")(run_cmd)
 
 # Provider commands
 app.command("providers", help="Manage providers")(providers_cmd)

@@ -112,15 +112,57 @@ def remove_cmd(
     asyncio.run(do_remove())
 
 
-def list_cmd():
-    """List installed models."""
+def list_cmd(
+    local: bool = typer.Option(False, "--local", "-l", help="Show local library models (downloadable)"),
+    cloud: bool = typer.Option(False, "--cloud", "-c", help="Show cloud models"),
+    installed: bool = typer.Option(False, "--installed", "-i", help="Show installed models"),
+):
+    """List models."""
     import asyncio
 
     async def do_list():
+        if cloud:
+            results = ModelLibrary.get_cloud_models()
+            if not results:
+                console.print("No cloud models available.")
+                return
+            table = Table(title=f"Cloud Models ({len(results)})")
+            table.add_column("Name", style="cyan")
+            table.add_column("Parameters", style="green")
+            table.add_column("Provider", style="yellow")
+            table.add_column("Tags", style="blue")
+            for m in sorted(results, key=lambda x: x.parameter_count):
+                table.add_row(m.name, m.parameter_count, m.provider or "-",
+                              ", ".join(m.tags[:3]))
+            console.print(table)
+            console.print(f"\n[dim]Tip: Use [bold]superllm run {results[0].name}[/bold] to chat[/dim]")
+            return
+
+        if local:
+            results = ModelLibrary.get_local_models()
+            if not results:
+                console.print("No local library models available.")
+                return
+            table = Table(title=f"Local Library Models ({len(results)})")
+            table.add_column("Name", style="cyan")
+            table.add_column("Parameters", style="green")
+            table.add_column("Context", style="white")
+            table.add_column("Category", style="yellow")
+            table.add_column("RAM", style="magenta")
+            for m in sorted(results, key=lambda x: x.parameter_count)[:50]:
+                table.add_row(m.name, m.parameter_count, str(m.context_length),
+                              m.category, m.recommended_ram or "-")
+            console.print(table)
+            if len(results) > 50:
+                console.print(f"\n[dim]Showing 50 of {len(results)} models. Use 'library' to search.[/dim]")
+            console.print(f"\n[dim]Tip: Run [bold]superllm pull <model>[/bold] to download[/dim]")
+            return
+
         models = await registry.list_installed()
         if not models:
             console.print("No models installed.")
             console.print("Run [bold]superllm pull <model>[/bold] to download one.")
+            console.print("Or [bold]superllm list --local[/bold] to browse available models.")
             return
 
         table = Table(title="Installed Models")
