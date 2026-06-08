@@ -20,11 +20,29 @@ class ProviderType(str, enum.Enum):
     openai = "openai"
     anthropic = "anthropic"
     google = "google"
+    deepseek = "deepseek"
+    openrouter = "openrouter"
+    mistral = "mistral"
+    cohere = "cohere"
+    xai = "xai"
+    fireworks = "fireworks"
     aws_bedrock = "aws_bedrock"
     azure = "azure"
     together = "together"
     groq = "groq"
+    ollama = "ollama"
+    openclaw = "openclaw"
+    opencode = "opencode"
     custom = "custom"
+
+
+class RouterStrategy(str, enum.Enum):
+    auto = "auto"
+    task = "task"
+    local_first = "local_first"
+    cloud_first = "cloud_first"
+    local_only = "local_only"
+    cloud_only = "cloud_only"
 
 
 class LogLevel(str, enum.Enum):
@@ -81,6 +99,33 @@ class Settings(BaseSettings):
     cloud_fallback: bool = True
     cloud_request_timeout: int = 120
 
+    # Smart Router
+    router_strategy: RouterStrategy = RouterStrategy.task
+    router_task_classification: bool = True
+    router_max_ram_gb: float = 32.0
+    router_auto_fallback: bool = True
+
+    # Agent config
+    agent_max_iterations: int = 10
+    agent_default_model: str = "auto"
+    agent_memory_max_messages: int = 50
+    agent_tool_timeout: int = 30
+
+    # Audio config
+    audio_enabled: bool = True
+    audio_whisper_model: str = "small"
+    audio_device: str = "cpu"
+    audio_compute_type: str = "int8"
+    audio_tts_model: str = "bark"
+    audio_sample_rate: int = 24000
+
+    # Performance
+    model_cache_enabled: bool = True
+    model_cache_max_gb: float = 8.0
+    model_lazy_load: bool = True
+    model_max_gpu_layers: int = 0
+    model_streaming_chunk_size: int = 1
+
     # Auth
     auth_enabled: bool = False
     api_key: Optional[str] = None
@@ -90,6 +135,10 @@ class Settings(BaseSettings):
     ui_enabled: bool = True
     ui_dev_mode: bool = False
     ui_port: int = 5173
+
+    # Hugging Face
+    hf_token: Optional[str] = None
+    hf_username: Optional[str] = None
 
     # Providers
     openai_api_key: Optional[str] = None

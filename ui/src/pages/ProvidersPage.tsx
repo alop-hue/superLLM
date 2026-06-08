@@ -29,11 +29,11 @@ export default function ProvidersPage() {
         </div>
 
         {isLoading && (
-          <div className="text-center py-10 text-gray-400">Loading...</div>
+          <div className="text-center py-10 text-gray-400 dark:text-gray-300">Loading...</div>
         )}
 
         {data && data.providers.length === 0 && (
-          <div className="text-center py-10 text-gray-400 dark:text-gray-500">
+          <div className="text-center py-10 text-gray-400 dark:text-gray-300">
             <Server className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p>No providers configured.</p>
             <p className="text-sm mt-1">
@@ -48,7 +48,7 @@ export default function ProvidersPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold">{provider.name}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-gray-500 dark:text-gray-300">
                     {provider.provider_type}
                     {provider.base_url && ` - ${provider.base_url}`}
                   </p>
@@ -58,12 +58,12 @@ export default function ProvidersPage() {
                     className={`px-2 py-0.5 text-xs rounded-full ${
                       provider.is_enabled
                         ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-500'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'
                     }`}
                   >
                     {provider.is_enabled ? 'Enabled' : 'Disabled'}
                   </span>
-                  <span className="text-xs text-gray-400">Priority: {provider.priority}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-300">Priority: {provider.priority}</span>
                   <button
                     onClick={() => deleteMutation.mutate(provider.name)}
                     className="btn-secondary !p-2 text-red-500"
@@ -73,7 +73,7 @@ export default function ProvidersPage() {
                 </div>
               </div>
               {provider.default_model && (
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-gray-400 dark:text-gray-300 mt-2">
                   Default model: {provider.default_model}
                 </p>
               )}
@@ -85,7 +85,7 @@ export default function ProvidersPage() {
           <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
             <Plus className="w-4 h-4" /> Add Provider
           </h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+          <p className="text-xs text-gray-500 dark:text-gray-300 mb-3">
             Configure providers through the CLI: <code className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">superllm providers add --name openai --type openai</code>
           </p>
           {types && (
@@ -93,7 +93,7 @@ export default function ProvidersPage() {
               {types.types.map((t: string) => (
                 <span
                   key={t}
-                  className="px-3 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 capitalize"
+                  className="px-3 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 capitalize"
                 >
                   {t}
                 </span>

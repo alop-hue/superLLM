@@ -35,6 +35,7 @@ class DBProviderRegistry(ProviderRegistry):
             config = ProviderConfigModel(
                 name=provider.name,
                 provider_type=ProviderType(provider.provider_type),
+                api_key=provider.api_key,
                 base_url=provider.base_url,
                 default_model=provider.default_model,
                 is_enabled=provider.is_enabled,
@@ -65,6 +66,7 @@ class DBProviderRegistry(ProviderRegistry):
             if not config:
                 return None
             config.provider_type = ProviderType(provider.provider_type)
+            config.api_key = provider.api_key
             config.base_url = provider.base_url
             config.default_model = provider.default_model
             config.is_enabled = provider.is_enabled
@@ -78,6 +80,7 @@ class DBProviderRegistry(ProviderRegistry):
         return Provider(
             name=config.name,
             provider_type=config.provider_type.value if config.provider_type else "local",
+            api_key=config.api_key,
             base_url=config.base_url,
             default_model=config.default_model,
             is_enabled=config.is_enabled,

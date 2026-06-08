@@ -22,9 +22,17 @@ def get_engine():
     return _engine
 
 
+class FileAttachment(BaseModel):
+    name: str
+    type: str
+    data: str
+    size: int
+
+
 class Message(BaseModel):
     role: str
     content: str
+    files: Optional[list[FileAttachment]] = None
 
 
 class ChatRequest(BaseModel):
@@ -38,6 +46,7 @@ class ChatRequest(BaseModel):
     stop: Optional[list[str]] = None
     presence_penalty: float = 0.0
     frequency_penalty: float = 0.0
+    files: Optional[list[FileAttachment]] = None
 
 
 class ChatChoice(BaseModel):
@@ -66,9 +75,15 @@ class ChatResponse(BaseModel):
 @router.post("/v1/chat/completions")
 async def chat_completions(request: ChatRequest):
     engine = get_engine()
+    messages = [m.model_dump(exclude_none=True) for m in request.messages]
+    if request.files and any(f for f in request.files):
+        attach = [f.model_dump() for f in request.files]
+        if messages:
+            msg = messages[-1]
+            msg["files"] = attach
     infer_request = InferenceRequest(
         model=request.model,
-        messages=[m.model_dump() for m in request.messages],
+        messages=messages,
         stream=request.stream,
         temperature=request.temperature,
         max_tokens=request.max_tokens,

@@ -5,6 +5,7 @@ from rich.console import Console
 
 from superllm.cli.run import run_cmd
 from superllm.cli.serve import serve_cmd
+from superllm.cli.open import open_app
 from superllm.cli.model import (
     pull_cmd,
     remove_cmd,
@@ -23,6 +24,7 @@ from superllm.cli.system import (
     logs_cmd,
     doctor_cmd,
 )
+from superllm.cli.hub import hub_cmd
 from superllm.cli.auth import login_cmd, logout_cmd
 
 console = Console()
@@ -55,8 +57,14 @@ app.command("list", help="List installed models")(list_cmd)
 app.command("show", help="Show model details")(show_cmd)
 app.command("library", help="Browse the model library")(library_cmd)
 
+# Hub command
+app.command("hub", help="Browse HuggingFace Hub for models")(hub_cmd)
+
 # Run command
 app.command("run", help="Start an interactive chat with a model")(run_cmd)
+
+# Open command (group: web UI + app launcher)
+app.add_typer(open_app, name="open", help="Open the superLLM web UI or launch external AI tools")
 
 # Provider commands
 app.command("providers", help="Manage providers")(providers_cmd)

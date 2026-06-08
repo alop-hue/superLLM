@@ -9,6 +9,8 @@ import {
   Sun,
   Moon,
   Zap,
+  PanelLeftClose,
+  PanelLeft,
 } from 'lucide-react'
 import { useThemeStore } from '../hooks/useThemeStore'
 import clsx from 'clsx'
@@ -24,7 +26,12 @@ const links = [
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
-export default function Sidebar() {
+type Props = {
+  collapsed: boolean
+  onToggle: () => void
+}
+
+export default function Sidebar({ collapsed, onToggle }: Props) {
   const { theme, toggle } = useThemeStore()
   const navigate = useNavigate()
 
@@ -35,18 +42,33 @@ export default function Sidebar() {
   })
 
   return (
-    <aside className="w-64 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex flex-col">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-lg font-bold"
-        >
-          <Zap className="w-6 h-6 text-brand-600" />
-          <span>superLLM</span>
+    <aside
+      className={clsx(
+        'border-r border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 flex flex-col transition-all duration-200',
+        collapsed ? 'w-16' : 'w-60',
+      )}
+    >
+      <div className="flex items-center justify-between p-3 border-b border-neutral-200 dark:border-neutral-800">
+        {!collapsed && (
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 text-base font-bold"
+          >
+            <Zap className="w-5 h-5 text-brand-500" />
+            <span>superLLM</span>
+          </button>
+        )}
+        {collapsed && (
+          <button onClick={() => navigate('/')} className="mx-auto">
+            <Zap className="w-5 h-5 text-brand-500" />
+          </button>
+        )}
+        <button onClick={onToggle} className="btn-ghost">
+          {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
         </button>
       </div>
 
-      <nav className="flex-1 p-3 space-y-1">
+      <nav className="flex-1 p-2 space-y-0.5">
         {links.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
@@ -55,30 +77,29 @@ export default function Sidebar() {
               clsx(
                 'sidebar-link',
                 isActive ? 'sidebar-link-active' : 'sidebar-link-inactive',
+                collapsed && 'justify-center px-2',
               )
             }
+            title={collapsed ? label : undefined}
           >
-            <Icon className="w-5 h-5" />
-            {label}
+            <Icon className="w-5 h-5 shrink-0" />
+            {!collapsed && <span className="truncate">{label}</span>}
           </NavLink>
         ))}
       </nav>
 
-      <div className="p-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+      <div className="p-2 border-t border-neutral-200 dark:border-neutral-800 space-y-1">
         <button
           onClick={toggle}
-          className="sidebar-link sidebar-link-inactive w-full"
+          className={clsx('sidebar-link sidebar-link-inactive w-full', collapsed && 'justify-center px-2')}
+          title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
         >
-          {theme === 'dark' ? (
-            <Sun className="w-5 h-5" />
-          ) : (
-            <Moon className="w-5 h-5" />
-          )}
-          {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          {!collapsed && <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>}
         </button>
 
-        {status && (
-          <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+        {!collapsed && status && (
+          <div className="px-3 py-2 text-xs text-neutral-500 dark:text-neutral-300">
             <div className="flex items-center gap-2">
               <span
                 className={clsx(

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
 
 from superllm.config.settings import settings
 from superllm.inference.base import (
@@ -11,6 +11,7 @@ from superllm.inference.base import (
     ModelInfo,
     ProviderHealth,
 )
+from superllm.models.library import LITELLM_MODEL_MAP
 
 
 class CloudInferenceEngine(InferenceEngine):
@@ -32,13 +33,43 @@ class CloudInferenceEngine(InferenceEngine):
                 "litellm not installed. Run: pip install 'superllm[cloud]'"
             )
 
+    def _resolve_model(self, model_name: str) -> str:
+        if "/" in model_name and not model_name.startswith(":"):
+            return model_name
+        if model_name in LITELLM_MODEL_MAP:
+            return LITELLM_MODEL_MAP[model_name]
+        base = model_name.replace(":cloud", "").replace(":local", "")
+        if base in LITELLM_MODEL_MAP:
+            return LITELLM_MODEL_MAP[base]
+        for suffix in (":cloud", ":local"):
+            cleaned = model_name.replace(suffix, "")
+            if cleaned in LITELLM_MODEL_MAP:
+                return LITELLM_MODEL_MAP[cleaned]
+        return self._default_fallback(model_name)
+
+    @staticmethod
+    def _default_fallback(model_name: str) -> str:
+        strategy = {
+            "qwen": "together_ai/Qwen/Qwen2.5-72B-Instruct-Turbo",
+            "llama": "together_ai/meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
+            "deepseek": "together_ai/deepseek-ai/DeepSeek-V3-0324",
+            "mistral": "mistral/mistral-large-latest",
+            "phi": "together_ai/microsoft/Phi-3.5-mininstruct",
+            "gemma": "together_ai/google/gemma-2-27b-it",
+        }
+        for key, mapped in strategy.items():
+            if key in model_name.lower():
+                return mapped
+        return "together_ai/Qwen/Qwen2.5-72B-Instruct-Turbo"
+
     async def chat(self, request: InferenceRequest) -> InferenceResponse:
         await self._init_client()
         start = time.time()
+        resolved_model = self._resolve_model(request.model)
 
         try:
             response = await self._client.acompletion(
-                model=request.model,
+                model=resolved_model,
                 messages=request.messages,
                 temperature=request.temperature,
                 max_tokens=request.max_tokens,
@@ -68,10 +99,11 @@ class CloudInferenceEngine(InferenceEngine):
         self, request: InferenceRequest
     ) -> AsyncGenerator[str, None]:
         await self._init_client()
+        resolved_model = self._resolve_model(request.model)
 
         try:
             response = await self._client.acompletion(
-                model=request.model,
+                model=resolved_model,
                 messages=request.messages,
                 temperature=request.temperature,
                 max_tokens=request.max_tokens,

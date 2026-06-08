@@ -11,7 +11,11 @@ from superllm.server.routes.health import router as health_router
 from superllm.server.routes.config import router as config_router
 from superllm.server.routes.providers import router as providers_router
 from superllm.server.routes.conversations import router as conversations_router
+from superllm.server.routes.agents import router as agents_router
+from superllm.server.routes.audio import router as audio_router
+from superllm.server.routes.embeddings import router as embeddings_router
 from superllm.server.middleware.auth import AuthMiddleware
+from superllm.ui.server import mount_ui
 from superllm.storage.db import Database
 from superllm.storage.models import Base
 
@@ -42,10 +46,14 @@ def create_app() -> FastAPI:
     app.include_router(config_router, prefix="/api", tags=["Config"])
     app.include_router(providers_router, prefix="/api", tags=["Providers"])
     app.include_router(conversations_router, prefix="/api", tags=["Conversations"])
+    app.include_router(agents_router, prefix="/api", tags=["Agents"])
+    app.include_router(audio_router, prefix="/api", tags=["Audio"])
+    app.include_router(embeddings_router, prefix="/api", tags=["Embeddings"])
 
     # OpenAI-compatible routes at root level (for SDK compatibility)
     app.include_router(chat_router, prefix="", tags=["OpenAI"])
     app.include_router(models_router, prefix="", tags=["OpenAI"])
+    app.include_router(embeddings_router, prefix="", tags=["OpenAI"])
 
     @app.on_event("startup")
     async def startup():
@@ -58,6 +66,9 @@ def create_app() -> FastAPI:
     async def shutdown():
         db = Database.get_instance()
         await db.disconnect()
+
+    if settings.ui_enabled:
+        mount_ui(app)
 
     return app
 
@@ -84,3 +95,7 @@ def run_dev():
         reload=True,
         factory=True,
     )
+
+
+if __name__ == "__main__":
+    run()

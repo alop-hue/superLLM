@@ -41,7 +41,7 @@ export default function LibraryPage() {
 
         <div className="flex gap-2 mb-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-300" />
             <input
               type="text"
               value={query}
@@ -65,7 +65,7 @@ export default function LibraryPage() {
         </div>
 
         {isLoading && (
-          <div className="text-center py-10 text-gray-400">Loading...</div>
+          <div className="text-center py-10 text-gray-400 dark:text-gray-300">Loading...</div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -79,7 +79,7 @@ export default function LibraryPage() {
         </div>
 
         {!isLoading && filtered.length === 0 && (
-          <div className="text-center py-10 text-gray-400">
+          <div className="text-center py-10 text-gray-400 dark:text-gray-300">
             <p>No models found.</p>
           </div>
         )}

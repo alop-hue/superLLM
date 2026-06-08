@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Cpu, Memory, BookOpen } from 'lucide-react'
+import { ArrowLeft, Cpu, MemoryStick as Memory, BookOpen } from 'lucide-react'
 import { api } from '../lib/api'
 
 export default function ModelDetailPage() {
@@ -22,7 +22,7 @@ export default function ModelDetailPage() {
     },
   })
 
-  if (isLoading) return <div className="p-6">Loading...</div>
+  if (isLoading) return <div className="p-6 text-gray-400 dark:text-gray-300">Loading...</div>
   if (error || !data)
     return (
       <div className="p-6">
@@ -46,7 +46,7 @@ export default function ModelDetailPage() {
           <div className="flex items-start justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold">{data.display_name}</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">
+              <p className="text-sm text-gray-500 dark:text-gray-300 font-mono">
                 {data.name}
               </p>
             </div>
@@ -60,25 +60,25 @@ export default function ModelDetailPage() {
 
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-300 mb-1">
                 <Cpu className="w-4 h-4" /> Parameters
               </div>
               <p className="font-semibold">{data.parameter_count || 'Unknown'}</p>
             </div>
             <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-300 mb-1">
                 <Memory className="w-4 h-4" /> Size
               </div>
               <p className="font-semibold">{data.size_display}</p>
             </div>
             <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-300 mb-1">
                 <BookOpen className="w-4 h-4" /> Context
               </div>
               <p className="font-semibold">{data.context_length} tokens</p>
             </div>
             <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-300 mb-1">
                 Architecture
               </div>
               <p className="font-semibold">{data.architecture || 'Unknown'}</p>
@@ -88,7 +88,7 @@ export default function ModelDetailPage() {
           {lib && (
             <>
               <h2 className="font-semibold mb-2">About</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                 {lib.description}
               </p>
 
@@ -96,7 +96,7 @@ export default function ModelDetailPage() {
                 <span className="px-3 py-1 text-xs rounded-full bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 capitalize">
                   {lib.category}
                 </span>
-                <span className="px-3 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                <span className="px-3 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                   RAM: {lib.recommended_ram}
                 </span>
               </div>
@@ -111,7 +111,7 @@ export default function ModelDetailPage() {
                         className={`px-3 py-1 text-xs rounded-full ${
                           q === data.quant
                             ? 'bg-brand-600 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                         }`}
                       >
                         {q}
@@ -130,7 +130,7 @@ export default function ModelDetailPage() {
                 {data.tags.map((tag: string) => (
                   <span
                     key={tag}
-                    className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                    className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                   >
                     {tag}
                   </span>
@@ -157,7 +157,7 @@ export default function ModelDetailPage() {
             </div>
           )}
 
-          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400">
+          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 dark:text-gray-300">
             <p>Path: {data.path}</p>
             <p>Downloaded: {data.download_date || 'N/A'}</p>
             <p>Last used: {data.last_used || 'Never'}</p>

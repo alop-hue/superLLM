@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
 
 from superllm.config.settings import settings
 from superllm.inference.base import (
@@ -16,7 +16,7 @@ from superllm.inference.base import (
 class LocalInferenceEngine(InferenceEngine):
     def __init__(self):
         self._model = None
-        self._current_model_path: Optional[str] = None
+        self._current_model_path: str | None = None
         self._loaded = False
 
     @property
@@ -41,14 +41,27 @@ class LocalInferenceEngine(InferenceEngine):
             self._loaded = True
         except ImportError:
             raise RuntimeError(
-                "llama-cpp-python not installed. Run: pip install 'superllm[local]'"
+                "llama-cpp-python not installed. Run: .venv/bin/pip install 'superllm[local]' (or activate venv: source .venv/bin/activate)"
             )
         except Exception as e:
             raise RuntimeError(f"Failed to load model: {e}")
 
+    async def _ensure_loaded(self, request: InferenceRequest):
+        if self._loaded and self._model:
+            return
+        from superllm.models.registry import ModelRegistry
+        registry = ModelRegistry.get_instance()
+        installed = await registry.get_model(request.model)
+        if installed and installed.path:
+            await self._load_model(installed.path)
+        else:
+            raise RuntimeError(
+                f"Model '{request.model}' is not installed locally. "
+                f"Run 'superllm pull {request.model}' to download it first."
+            )
+
     async def chat(self, request: InferenceRequest) -> InferenceResponse:
-        if not self._loaded or not self._model:
-            raise RuntimeError("No model loaded. Call load_model first.")
+        await self._ensure_loaded(request)
 
         start = time.time()
         response = self._model.create_chat_completion(
@@ -79,8 +92,7 @@ class LocalInferenceEngine(InferenceEngine):
     async def chat_stream(
         self, request: InferenceRequest
     ) -> AsyncGenerator[str, None]:
-        if not self._loaded or not self._model:
-            raise RuntimeError("No model loaded. Call load_model first.")
+        await self._ensure_loaded(request)
 
         stream = self._model.create_chat_completion(
             messages=request.messages,

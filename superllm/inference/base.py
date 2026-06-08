@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
-from typing import AsyncGenerator, Optional
 
 
 @dataclass
@@ -11,10 +11,10 @@ class InferenceRequest:
     messages: list[dict]
     stream: bool = False
     temperature: float = 0.7
-    max_tokens: Optional[int] = None
+    max_tokens: int | None = None
     top_p: float = 0.95
     top_k: int = 40
-    stop: Optional[list[str]] = None
+    stop: list[str] | None = None
     presence_penalty: float = 0.0
     frequency_penalty: float = 0.0
     metadata: dict = field(default_factory=dict)
@@ -43,7 +43,7 @@ class ProviderHealth:
     name: str
     healthy: bool
     latency_ms: float
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class InferenceEngine(ABC):

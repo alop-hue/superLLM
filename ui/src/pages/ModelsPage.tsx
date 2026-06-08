@@ -85,13 +85,13 @@ export default function ModelsPage() {
           )}
           {pullMutation.isSuccess && (
             <p className="text-xs text-green-500 mt-2">
-              {pullMutation.data.status}: {pullMutation.data.message}
+              {pullMutation.data.status}: {pullMutation.data.name}
             </p>
           )}
         </div>
 
         {isLoading && (
-          <div className="text-center py-10 text-gray-400">Loading...</div>
+          <div className="text-center py-10 text-gray-400 dark:text-gray-300">Loading...</div>
         )}
 
         {error && (
@@ -101,7 +101,7 @@ export default function ModelsPage() {
         )}
 
         {data && data.models.length === 0 && (
-          <div className="text-center py-10 text-gray-400 dark:text-gray-500">
+          <div className="text-center py-10 text-gray-400 dark:text-gray-400">
             <Box className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p>No models installed yet.</p>
             <p className="text-sm mt-1">

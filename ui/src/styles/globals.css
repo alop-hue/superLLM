@@ -5,14 +5,70 @@
 @layer base {
   :root {
     --color-bg: 255 255 255;
-    --color-fg: 15 23 42;
+    --color-fg: 23 23 23;
   }
   .dark {
-    --color-bg: 15 23 42;
-    --color-fg: 241 245 249;
+    --color-bg: 23 23 23;
+    --color-fg: 245 245 245;
   }
   body {
-    @apply antialiased;
+    @apply antialiased bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-neutral-400 dark:bg-neutral-600 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-neutral-500 dark:bg-neutral-500;
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.neutral.400') transparent;
+  }
+  .dark * {
+    scrollbar-color: theme('colors.neutral.600') transparent;
+  }
+
+  /* Range slider */
+  input[type='range'] {
+    @apply appearance-none h-1.5 rounded-full bg-neutral-300 dark:bg-neutral-700 cursor-pointer;
+  }
+  input[type='range']::-webkit-slider-thumb {
+    @apply appearance-none w-4 h-4 rounded-full bg-brand-500 border-2 border-white dark:border-neutral-950 shadow-sm cursor-pointer transition-transform hover:scale-110;
+  }
+  input[type='range']::-moz-range-thumb {
+    @apply w-4 h-4 rounded-full bg-brand-500 border-2 border-white dark:border-neutral-950 shadow-sm cursor-pointer;
+  }
+
+  /* Toggle switch */
+  input[type='checkbox'].toggle {
+    @apply sr-only;
+  }
+  input[type='checkbox'].toggle + div {
+    @apply w-10 h-6 bg-neutral-300 dark:bg-neutral-700 rounded-full relative cursor-pointer transition-colors;
+  }
+  input[type='checkbox'].toggle:checked + div {
+    @apply bg-brand-500;
+  }
+  input[type='checkbox'].toggle + div::after {
+    content: '';
+    @apply absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform;
+  }
+  input[type='checkbox'].toggle:checked + div::after {
+    transform: translateX(16px);
+  }
+  input[type='checkbox'].toggle:focus-visible + div {
+    @apply ring-2 ring-brand-400 ring-offset-2 dark:ring-offset-neutral-950;
   }
 }
 
@@ -21,24 +77,52 @@
     @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors;
   }
   .sidebar-link-active {
-    @apply bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300;
+    @apply bg-brand-100 dark:bg-brand-900/30 text-brand-800 dark:text-brand-300;
   }
   .sidebar-link-inactive {
-    @apply text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800;
+    @apply text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700;
+    @apply btn bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800;
   }
   .btn-secondary {
-    @apply btn bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700;
+    @apply btn bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200 dark:hover:bg-neutral-700;
   }
   .card {
-    @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm;
+    @apply bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 shadow-sm;
   }
+
+  /* ChatGPT-style invisible input */
+  .input-chat {
+    @apply w-full resize-none bg-transparent text-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none;
+  }
+
+  /* Standard input */
   .input {
-    @apply w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent;
+    @apply w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent placeholder-neutral-400 dark:placeholder-neutral-600 text-neutral-900 dark:text-neutral-100;
+  }
+
+  /* Chat input container */
+  .chat-input-container {
+    @apply flex items-end gap-2 px-4 py-3 mx-auto max-w-4xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm rounded-2xl focus-within:border-brand-300 dark:focus-within:border-brand-700 focus-within:shadow-md transition-all;
+  }
+
+  .select {
+    @apply input appearance-none cursor-pointer;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300;
+  }
+  .chat-bubble-user {
+    @apply bg-brand-600 text-white rounded-2xl rounded-br-sm;
+  }
+  .chat-bubble-assistant {
+    @apply bg-neutral-100 dark:bg-neutral-800 rounded-2xl rounded-bl-sm;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center p-2 rounded-lg text-neutral-500 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors;
   }
 }

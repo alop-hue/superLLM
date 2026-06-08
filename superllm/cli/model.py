@@ -8,6 +8,28 @@ from rich.table import Table
 from rich.markdown import Markdown
 
 from superllm.config.settings import settings
+
+
+def _write_env(key: str, value: str):
+    """Write or update an env variable in the project's .env file."""
+    import os
+    from pathlib import Path
+    env_path = Path.cwd() / ".env"
+    key_upper = key.upper() if not key.startswith("SUPERLLM_") else key
+    if env_path.exists():
+        lines = env_path.read_text().splitlines()
+        found = False
+        for i, line in enumerate(lines):
+            if line.strip().startswith(f"{key_upper}="):
+                lines[i] = f"{key_upper}={value}"
+                found = True
+                break
+        if not found:
+            lines.append(f"{key_upper}={value}")
+        env_path.write_text("\n".join(lines) + "\n")
+    else:
+        env_path.write_text(f"{key_upper}={value}\n")
+    os.environ[key_upper] = value
 from superllm.models.registry import ModelRegistry
 from superllm.models.library import ModelLibrary
 
@@ -16,43 +38,73 @@ registry = ModelRegistry.get_instance()
 
 
 def pull_cmd(
-    name: str = typer.Argument(..., help="Model name to download"),
+    name: str = typer.Argument(..., help="Model name or HF repo ID (e.g. bartowski/Llama-3.2-1B-Instruct-GGUF)"),
     quantization: str = typer.Option("Q4_K_M", "--quant", "-q", help="Quantization type"),
+    download_url: Optional[str] = typer.Option(None, "--download-url", "-u", help="Custom download URL"),
+    hf_token: Optional[str] = typer.Option(None, "--token", help="HuggingFace access token"),
 ):
-    """Download a model from the library."""
+    """Download a model from the library or HuggingFace Hub."""
+    import httpx
+    import asyncio
     from superllm.models.library import ModelLibrary
+    from superllm.hub.hf_client import HFClient
+
     card = ModelLibrary.get_model(name)
-    if not card:
+    is_hf_repo = not card and "/" in name
+
+    if not card and not is_hf_repo:
         console.print(f"[red]Model '{name}' not found in library.[/red]")
-        console.print("Run [bold]superllm library[/bold] to see available models.")
+        console.print("Search HuggingFace Hub: [bold]superllm hub {name}[/bold]")
+        console.print("Or use a full HF repo ID: [bold]superllm pull bartowski/Llama-3.2-1B-Instruct-GGUF[/bold]")
         raise typer.Exit(1)
 
     console.print(f"Pulling [bold]{name}[/bold] ({quantization})...")
-    console.print(f"  Size estimate: {card.size_estimates.get(quantization, 'unknown')} bytes")
-    console.print(f"  Recommended RAM: {card.recommended_ram}")
+    if card:
+        estimate = card.size_estimates.get(quantization, '')
+        if estimate:
+            console.print(f"  Size estimate: {estimate} bytes")
+        console.print(f"  Recommended RAM: {card.recommended_ram}")
     console.print()
 
-    import httpx
-    import asyncio
+    hf = HFClient(token=hf_token)
 
     async def do_pull():
         models_dir = settings.models_dir
         models_dir.mkdir(parents=True, exist_ok=True)
-        filename = f"{name.replace('.', '-')}-{quantization}.gguf"
+        filename = f"{name.replace('/', '-').replace('.', '-')}-{quantization}.gguf"
         dest_path = models_dir / filename
 
         if dest_path.exists():
-            console.print(f"[yellow]Model already exists at {dest_path}[/yellow]")
+            console.print(f"[yellow]Already exists at {dest_path}[/yellow]")
             return
 
-        download_url = card.url
-        if not download_url:
-            console.print("[red]No download URL available for this model.[/red]")
+        resolved_url = download_url
+        if not resolved_url:
+            if is_hf_repo:
+                resolved_url = hf.resolve_gguf_url(name, quantization)
+            else:
+                resolved_url = ModelLibrary.resolve_download_url(card.name, quantization)
+
+        if not resolved_url:
+            console.print("[red]No download URL available.[/red]")
+            console.print("Use [bold]--download-url[/bold] to specify a custom URL.")
+            if not is_hf_repo:
+                console.print(f"Search HF: [bold]superllm hub {name}[/bold]")
             raise typer.Exit(1)
 
         try:
             async with httpx.AsyncClient(timeout=settings.model_pull_timeout, follow_redirects=True) as client:
-                async with client.stream("GET", download_url) as response:
+                head_resp = await client.head(resolved_url)
+                if head_resp.status_code >= 400:
+                    console.print(f"[yellow]URL returns {head_resp.status_code}, may not exist.[/yellow]")
+                    if not download_url and not is_hf_repo:
+                        suggestions = hf.get_suggestions(name)
+                        if suggestions:
+                            console.print("  Similar models on HF:")
+                            for s in suggestions[:3]:
+                                console.print(f"    [bold]{s['id']}[/bold] ({s['gguf_count']} GGUF files)")
+                    raise typer.Exit(1)
+                async with client.stream("GET", resolved_url) as response:
                     response.raise_for_status()
                     total = int(response.headers.get("content-length", 0))
                     downloaded = 0
@@ -66,10 +118,31 @@ def pull_cmd(
                             else:
                                 console.print(f"\r  Downloaded: {downloaded / 1024 / 1024:.1f} MB", end="")
                     console.print()
+        except httpx.HTTPStatusError as e:
+            if dest_path.exists():
+                dest_path.unlink()
+            if e.response.status_code in (401, 403):
+                console.print(f"[red]Authentication required.[/red]")
+                console.print("  This model may be gated or requires a HuggingFace token.")
+                console.print("  Set token: [bold]superllm hub --login[/bold]")
+                console.print(f"  Or: [bold]superllm pull {name} --token YOUR_TOKEN[/bold]")
+            else:
+                console.print(f"[red]Download failed: {e}[/red]")
+            raise typer.Exit(1)
+        except HTTPException as e:
+            if dest_path.exists():
+                dest_path.unlink()
+            console.print(f"[red]Download failed: {e}[/red]")
+            raise typer.Exit(1)
         except Exception as e:
             if dest_path.exists():
                 dest_path.unlink()
             console.print(f"[red]Download failed: {e}[/red]")
+            raise typer.Exit(1)
+
+        if dest_path.stat().st_size < 1024:
+            dest_path.unlink()
+            console.print("[red]File too small (error page instead of model).[/red]")
             raise typer.Exit(1)
 
         await registry.register_model(

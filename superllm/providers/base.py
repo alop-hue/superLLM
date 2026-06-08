@@ -13,6 +13,7 @@ class Provider:
     priority: int = 0
     base_url: Optional[str] = None
     default_model: Optional[str] = None
+    api_key: Optional[str] = None
     config: dict = field(default_factory=dict)
     health_status: Optional[bool] = None
 

@@ -15,6 +15,7 @@ class ProviderCreate(BaseModel):
     name: str
     provider_type: str
     base_url: Optional[str] = None
+    api_key: Optional[str] = None
     default_model: Optional[str] = None
     is_enabled: bool = True
     priority: int = 0
@@ -32,6 +33,7 @@ async def list_providers():
                 "is_enabled": p.is_enabled,
                 "priority": p.priority,
                 "base_url": p.base_url,
+                "api_key": p.api_key,
                 "default_model": p.default_model,
                 "config": p.config,
             }
@@ -55,6 +57,7 @@ async def add_provider(create: ProviderCreate):
         name=create.name,
         provider_type=create.provider_type,
         base_url=create.base_url,
+        api_key=create.api_key,
         default_model=create.default_model,
         is_enabled=create.is_enabled,
         priority=create.priority,
@@ -75,6 +78,7 @@ async def get_provider(name: str):
         "is_enabled": provider.is_enabled,
         "priority": provider.priority,
         "base_url": provider.base_url,
+        "api_key": provider.api_key,
         "default_model": provider.default_model,
         "config": provider.config,
     }

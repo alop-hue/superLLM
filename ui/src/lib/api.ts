@@ -158,16 +158,26 @@ export function chatStream(
   onDone: () => void,
   onError: (err: string) => void,
   signal?: AbortSignal,
+  files?: { name: string; type: string; data: string; size: number }[],
 ) {
+  let finished = false
+  const done = () => { if (!finished) { finished = true; onDone() } }
+
+  const body: Record<string, unknown> = { model, messages, stream: true }
+  if (files && files.length > 0) {
+    body.files = files.map((f) => ({ name: f.name, type: f.type, data: f.data, size: f.size }))
+  }
+
   fetch('/api/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, messages, stream: true }),
+    body: JSON.stringify(body),
     signal,
   })
     .then(async (res) => {
       if (!res.ok) {
-        onError(`HTTP ${res.status}: ${res.statusText}`)
+        const text = await res.text().catch(() => '')
+        onError(`HTTP ${res.status}: ${res.statusText}${text ? ` — ${text}` : ''}`)
         return
       }
       const reader = res.body?.getReader()
@@ -179,31 +189,29 @@ export function chatStream(
       let buffer = ''
 
       while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+        const { done: readerDone, value } = await reader.read()
+        if (readerDone) break
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
         buffer = lines.pop() || ''
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6)
-            if (data === '[DONE]') {
-              onDone()
-              return
-            }
-            try {
-              const parsed = JSON.parse(data)
-              const content = parsed.choices?.[0]?.delta?.content
-              if (content) onChunk(content)
-              if (parsed.choices?.[0]?.finish_reason) onDone()
-            } catch {
-              // ignore parse errors
-            }
+          const t = line.trim()
+          if (!t.startsWith('data: ')) continue
+          const payload = t.slice(6)
+          if (payload === '[DONE]') { done(); return }
+          try {
+            const parsed = JSON.parse(payload)
+            if (parsed.error) { onError(parsed.error); return }
+            const content = parsed.choices?.[0]?.delta?.content
+            if (content) onChunk(content)
+            if (parsed.choices?.[0]?.finish_reason) done()
+          } catch {
+            // ignore parse errors on partial chunks
           }
         }
       }
-      onDone()
+      done()
     })
     .catch((err) => {
       if (err.name !== 'AbortError') onError(err.message)

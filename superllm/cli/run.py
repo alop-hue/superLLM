@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-import readline
 import sys
+
+try:
+    import readline  # noqa: F401 — improves input() line editing (Unix)
+except ImportError:
+    pass  # Windows doesn't have readline; input() still works
 from typing import Optional
 
 import typer
@@ -68,41 +72,75 @@ def _read_multiline(prompt: str) -> str:
     return first
 
 
+def _show_cloud_suggestions(model: str):
+    card = ModelLibrary.get_model(model)
+    if card:
+        if card.source == "cloud":
+            console.print(f"[yellow]Model '{model}' is a cloud-only model.[/yellow]")
+            console.print(f"  Use [bold]--cloud[/bold] flag or set SUPERLLM_MODE=cloud")
+            return
+    cloud_alternatives = ModelLibrary.search(f"{model}:cloud")
+    if cloud_alternatives:
+        console.print(f"  Cloud alternative: [bold]{cloud_alternatives[0].name}[/bold] (use --cloud)")
+
+    similar = ModelLibrary.search(model)
+    if similar:
+        console.print(f"  Similar available models:")
+        for s in similar[:5]:
+            if s.source != "cloud":
+                console.print(f"    [bold]{s.name}[/bold] ({s.recommended_ram or 'unknown RAM'})")
+        console.print(f"  Run [bold]superllm pull <model>[/bold] to download one")
+
+
 async def _do_run(
     model: str,
     local: bool = False,
     cloud: bool = False,
+    auto: bool = False,
     system: Optional[str] = None,
     temperature: float = 0.7,
     max_tokens: Optional[int] = None,
 ):
     registry = ModelRegistry.get_instance()
-    router = InferenceRouter()
+    is_cloud_model = ":cloud" in model or cloud
+    is_auto = model == "auto" or auto
 
-    is_cloud_model = ":cloud" in model
+    if is_auto:
+        from superllm.inference.smart_router import SmartRouter
+        router = SmartRouter()
+    else:
+        router = InferenceRouter()
 
-    if cloud or is_cloud_model:
+    if is_cloud_model:
         router.set_strategy(RoutingStrategy.cloud_only)
     elif local:
         router.set_strategy(RoutingStrategy.local_only)
 
-    installed = await registry.get_model(model)
-    if not installed and not is_cloud_model:
+    if not is_auto:
+        installed = await registry.get_model(model)
         card = ModelLibrary.get_model(model)
-        if not card or card.source == "cloud":
-            pass
-        else:
-            console.print(f"[yellow]Model '{model}' is not downloaded.[/yellow]")
-            console.print(f"  Run [bold]superllm pull {model}[/bold] to download it first.")
-            raise typer.Exit(1)
+
+        if not installed and not is_cloud_model:
+            if card and card.source != "cloud":
+                console.print(f"[yellow]Model '{model}' is not downloaded.[/yellow]")
+                console.print(f"  Run [bold]superllm pull {model}[/bold] to download it first.")
+                _show_cloud_suggestions(model)
+                raise typer.Exit(1)
+
+        if is_cloud_model and not installed:
+            if not card:
+                console.print(f"[yellow]Model '{model}' not found in library.[/yellow]")
+                console.print("  Use 'superllm library' to browse available models")
+                raise typer.Exit(1)
 
     conversation: list[dict] = []
     if system:
         conversation.append({"role": "system", "content": system})
 
+    display_model = model if not is_auto else "auto (smart router)"
     console.print()
     console.print(f"[bold cyan]╭─ superLLM chat ───────────────────────────────╮")
-    console.print(f"│ Model: {model}")
+    console.print(f"│ Model: {display_model}")
     if system:
         console.print(f"│ System: {system[:50]}{'...' if len(system) > 50 else ''}")
     console.print(f"│ Type [bold]/help[/bold] for commands, [bold]/exit[/bold] to quit")
@@ -113,7 +151,7 @@ async def _do_run(
 
     while True:
         try:
-            user_input = _read_multiline(f"[bold cyan]{model}[/bold cyan] >>> ")
+            user_input = _read_multiline(f"[bold cyan]{display_model}[/bold cyan] >>> ")
         except (EOFError, KeyboardInterrupt):
             console.print()
             break
@@ -149,7 +187,7 @@ async def _do_run(
         conversation.append({"role": "user", "content": user_input})
 
         request = InferenceRequest(
-            model=model,
+            model=model if not is_auto else "auto",
             messages=conversation,
             stream=True,
             temperature=temperature,
@@ -179,19 +217,21 @@ async def _do_run(
 
 
 def run_cmd(
-    model: str = typer.Argument(..., help="Model name to chat with"),
+    model: str = typer.Argument("auto", help="Model name to chat with (use 'auto' for smart routing)"),
     local: bool = typer.Option(False, "--local", "-l", help="Force local inference"),
     cloud: bool = typer.Option(False, "--cloud", "-c", help="Force cloud inference"),
+    auto: bool = typer.Option(False, "--auto", "-a", help="Smart auto-routing based on task"),
     system: Optional[str] = typer.Option(None, "--system", "-s", help="System prompt"),
     temperature: float = typer.Option(0.7, "--temperature", "-t", help="Temperature (0.0-2.0)"),
     max_tokens: Optional[int] = typer.Option(None, "--max-tokens", "-m", help="Max tokens to generate"),
 ):
-    """Start an interactive chat with a model (like 'ollama run')."""
+    """Start an interactive chat with a model (like 'ollama run'). Use 'auto' for model."""
     asyncio.run(
         _do_run(
             model=model,
             local=local,
             cloud=cloud,
+            auto=auto,
             system=system,
             temperature=temperature,
             max_tokens=max_tokens,

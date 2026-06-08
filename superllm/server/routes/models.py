@@ -63,6 +63,10 @@ async def list_library(
                 "category": m.category,
                 "recommended_ram": m.recommended_ram,
                 "size_estimates": m.size_estimates,
+                "latency_profile": m.latency_profile,
+                "strengths": m.strengths,
+                "weaknesses": m.weaknesses,
+                "model_family": m.model_family,
             }
             for m in results
         ],
@@ -103,6 +107,45 @@ async def list_categories():
     }
 
 
+@router.get("/models/recommend")
+async def recommend_models(
+    task: str = "chat",
+    max_ram: float = 32.0,
+    category: Optional[str] = None,
+):
+    if task == "hardware":
+        results = ModelLibrary.recommend_for_hardware(max_ram)
+    elif task == "all":
+        results = ModelLibrary.recommend_for_hardware(max_ram)
+    else:
+        results = ModelLibrary.recommend_for_task(task, max_ram)
+    if category:
+        results = [m for m in results if m.category == category]
+    return {
+        "models": [
+            {
+                "name": m.name,
+                "display_name": m.display_name,
+                "category": m.category,
+                "latency_profile": m.latency_profile,
+                "recommended_ram": m.recommended_ram,
+                "capabilities": m.capabilities,
+                "strengths": m.strengths,
+                "tags": m.tags,
+            }
+            for m in results[:50]
+        ],
+        "total": len(results),
+        "task": task,
+        "max_ram_gb": max_ram,
+    }
+
+
+@router.get("/models/summarize")
+async def library_summary():
+    return ModelLibrary.summarize()
+
+
 @router.get("/models/{name}")
 async def get_model(name: str):
     model = await registry.get_model(name)
@@ -117,6 +160,10 @@ async def get_model(name: str):
             "recommended_ram": card.recommended_ram,
             "quantizations": card.quantizations,
             "url": card.url,
+            "latency_profile": card.latency_profile,
+            "strengths": card.strengths,
+            "weaknesses": card.weaknesses,
+            "model_family": card.model_family,
         }
     return result
 
@@ -128,11 +175,12 @@ async def pull_model(request: PullRequest):
     if not card:
         raise HTTPException(status_code=404, detail=f"Model '{name}' not found in library")
 
-    if not card.url:
+    quant = request.quantization
+    download_url = card.url or ModelLibrary.resolve_download_url(name, quant)
+    if not download_url:
         raise HTTPException(status_code=400, detail=f"No download URL for model '{name}'")
 
     import httpx
-    quant = request.quantization
     filename = f"{name.replace('.', '-')}-{quant}.gguf"
     models_dir = settings.models_dir
     models_dir.mkdir(parents=True, exist_ok=True)
@@ -146,16 +194,23 @@ async def pull_model(request: PullRequest):
             path=str(dest_path),
         )
 
-    card = ModelLibrary.get_model(name)
-    download_url = card.url if card else None
+    download_url = card.url or ModelLibrary.resolve_download_url(name, quant)
     if not download_url:
         raise HTTPException(status_code=400, detail=f"Cannot resolve download URL for '{name}'")
 
     try:
-        async with httpx.AsyncClient(timeout=settings.model_pull_timeout) as client:
+        async with httpx.AsyncClient(timeout=settings.model_pull_timeout, follow_redirects=True) as client:
+            head = await client.head(download_url)
+            if head.status_code >= 400:
+                raise HTTPException(status_code=400, detail=f"Download URL returned {head.status_code}: {download_url}")
             response = await client.get(download_url)
             response.raise_for_status()
-            dest_path.write_bytes(response.content)
+            content = response.content
+            if len(content) < 1024:
+                raise HTTPException(status_code=400, detail=f"Downloaded file is too small ({len(content)} bytes) - likely not a valid model file")
+            dest_path.write_bytes(content)
+    except HTTPException:
+        raise
     except Exception as e:
         if dest_path.exists():
             dest_path.unlink()
