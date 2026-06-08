@@ -9,13 +9,15 @@ from superllm.agents.base import Tool, ToolResult
 
 class CalculatorTool(Tool):
     name: str = "calculator"
-    description: str = "Evaluate mathematical expressions. Use for arithmetic, algebra, and numeric computations."
+    description: str = (
+        "Evaluate mathematical expressions. Use for arithmetic, algebra, and numeric computations."
+    )
     parameters: dict = {
         "type": "object",
         "properties": {
             "expression": {
                 "type": "string",
-                "description": "The mathematical expression to evaluate (e.g., '2 + 2', 'sqrt(144)', '3 * 7 + 5')",
+                "description": "The mathematical expression to evaluate (e.g., '2 + 2', 'sqrt(144)', '3 * 7 + 5')",  # noqa: E501
             }
         },
         "required": ["expression"],
@@ -25,13 +27,27 @@ class CalculatorTool(Tool):
         start = time.time()
         try:
             safe_dict = {
-                "abs": abs, "round": round, "min": min, "max": max,
-                "sum": sum, "pow": pow, "int": int, "float": float,
-                "len": len, "range": range,
-                "sqrt": math.sqrt, "sin": math.sin, "cos": math.cos,
-                "tan": math.tan, "log": math.log, "log10": math.log10,
-                "pi": math.pi, "e": math.e, "inf": math.inf,
-                "floor": math.floor, "ceil": math.ceil,
+                "abs": abs,
+                "round": round,
+                "min": min,
+                "max": max,
+                "sum": sum,
+                "pow": pow,
+                "int": int,
+                "float": float,
+                "len": len,
+                "range": range,
+                "sqrt": math.sqrt,
+                "sin": math.sin,
+                "cos": math.cos,
+                "tan": math.tan,
+                "log": math.log,
+                "log10": math.log10,
+                "pi": math.pi,
+                "e": math.e,
+                "inf": math.inf,
+                "floor": math.floor,
+                "ceil": math.ceil,
             }
             result = eval(expression, {"__builtins__": {}}, safe_dict)
             elapsed = (time.time() - start) * 1000
@@ -53,7 +69,9 @@ class CalculatorTool(Tool):
 
 class WebSearchTool(Tool):
     name: str = "web_search"
-    description: str = "Search the web for current information. Use for news, facts, and real-time data."
+    description: str = (
+        "Search the web for current information. Use for news, facts, and real-time data."
+    )
     parameters: dict = {
         "type": "object",
         "properties": {
@@ -74,6 +92,7 @@ class WebSearchTool(Tool):
         start = time.time()
         try:
             import httpx
+
             serp_api_key = None
 
             if serp_api_key:
@@ -85,11 +104,13 @@ class WebSearchTool(Tool):
                     data = resp.json()
                     results = []
                     for r in data.get("organic_results", [])[:num_results]:
-                        results.append({
-                            "title": r.get("title", ""),
-                            "link": r.get("link", ""),
-                            "snippet": r.get("snippet", ""),
-                        })
+                        results.append(
+                            {
+                                "title": r.get("title", ""),
+                                "link": r.get("link", ""),
+                                "snippet": r.get("snippet", ""),
+                            }
+                        )
                     elapsed = (time.time() - start) * 1000
                     return ToolResult(
                         success=True,
@@ -110,10 +131,12 @@ class WebSearchTool(Tool):
                     results.append({"title": "Summary", "snippet": abstract})
                 for topic in data.get("RelatedTopics", [])[:num_results]:
                     if "Text" in topic:
-                        results.append({
-                            "title": topic.get("Text", "")[:100],
-                            "snippet": topic.get("Text", ""),
-                        })
+                        results.append(
+                            {
+                                "title": topic.get("Text", "")[:100],
+                                "snippet": topic.get("Text", ""),
+                            }
+                        )
                 elapsed = (time.time() - start) * 1000
                 return ToolResult(
                     success=True,
@@ -133,7 +156,7 @@ class WebSearchTool(Tool):
 
 class PythonExecTool(Tool):
     name: str = "python_execute"
-    description: str = "Execute Python code in a sandboxed environment. Use for data analysis, computation, and scripting."
+    description: str = "Execute Python code in a sandboxed environment. Use for data analysis, computation, and scripting."  # noqa: E501
     parameters: dict = {
         "type": "object",
         "properties": {
@@ -216,6 +239,7 @@ class FileReadTool(Tool):
         start = time.time()
         try:
             import aiofiles
+
             async with aiofiles.open(path, encoding=encoding) as f:
                 content = await f.read()
             elapsed = (time.time() - start) * 1000
@@ -262,6 +286,7 @@ class FileWriteTool(Tool):
         start = time.time()
         try:
             import aiofiles
+
             async with aiofiles.open(path, mode="w", encoding=encoding) as f:
                 await f.write(content)
             elapsed = (time.time() - start) * 1000
@@ -303,6 +328,7 @@ class DatabaseQueryTool(Tool):
         start = time.time()
         try:
             from superllm.storage.db import Database
+
             db = Database.get_instance()
             async with db.session() as session:
                 result = await session.execute(query)
@@ -328,7 +354,9 @@ class DatabaseQueryTool(Tool):
 
 class WeatherTool(Tool):
     name: str = "get_weather"
-    description: str = "Get current weather for a city. Returns temperature, conditions, and humidity."
+    description: str = (
+        "Get current weather for a city. Returns temperature, conditions, and humidity."
+    )
     parameters: dict = {
         "type": "object",
         "properties": {
@@ -348,6 +376,7 @@ class WeatherTool(Tool):
         start = time.time()
         try:
             import httpx
+
             location = f"{city},{country}" if country else city
             async with httpx.AsyncClient(timeout=10) as client:
                 resp = await client.get(

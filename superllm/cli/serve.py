@@ -22,6 +22,7 @@ def serve_cmd(
         settings.port = port
     if mode:
         from superllm.config.settings import Mode
+
         settings.mode = Mode(mode)
     if debug:
         settings.debug = True
@@ -39,4 +40,5 @@ def serve_cmd(
     console.print()
 
     from superllm.server.app import run
+
     run()

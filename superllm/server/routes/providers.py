@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -14,9 +12,9 @@ router = APIRouter()
 class ProviderCreate(BaseModel):
     name: str
     provider_type: str
-    base_url: Optional[str] = None
-    api_key: Optional[str] = None
-    default_model: Optional[str] = None
+    base_url: str | None = None
+    api_key: str | None = None
+    default_model: str | None = None
     is_enabled: bool = True
     priority: int = 0
     config: dict = {}
@@ -46,6 +44,7 @@ async def list_providers():
 @router.get("/providers/types")
 async def list_provider_types():
     from superllm.config.settings import ProviderType
+
     return {
         "types": [t.value for t in ProviderType],
     }

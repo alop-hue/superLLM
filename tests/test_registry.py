@@ -1,5 +1,4 @@
 from superllm.providers.base import Provider
-from superllm.providers.registry import registry
 
 
 def test_provider_creation():

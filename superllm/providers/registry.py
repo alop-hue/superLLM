@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from sqlalchemy import select
 
 from superllm.config.settings import ProviderType
@@ -11,7 +9,7 @@ from superllm.storage.models import ProviderConfig as ProviderConfigModel
 
 
 class DBProviderRegistry(ProviderRegistry):
-    def __init__(self, database: Optional[Database] = None):
+    def __init__(self, database: Database | None = None):
         self._db = database or Database.get_instance()
 
     async def get_providers(self) -> list[Provider]:
@@ -22,7 +20,7 @@ class DBProviderRegistry(ProviderRegistry):
             configs = result.scalars().all()
             return [self._to_provider(c) for c in configs]
 
-    async def get_provider(self, name: str) -> Optional[Provider]:
+    async def get_provider(self, name: str) -> Provider | None:
         async with self._db.session() as session:
             result = await session.execute(
                 select(ProviderConfigModel).where(ProviderConfigModel.name == name)
@@ -57,7 +55,7 @@ class DBProviderRegistry(ProviderRegistry):
             await session.delete(config)
             return True
 
-    async def update_provider(self, provider: Provider) -> Optional[Provider]:
+    async def update_provider(self, provider: Provider) -> Provider | None:
         async with self._db.session() as session:
             result = await session.execute(
                 select(ProviderConfigModel).where(ProviderConfigModel.name == provider.name)

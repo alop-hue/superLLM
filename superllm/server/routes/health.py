@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-import time
-from typing import Optional
-
 from fastapi import APIRouter
 
-from superllm.config.settings import settings, Mode
+from superllm.config.settings import settings
 from superllm.inference.router import InferenceRouter
 
 router = APIRouter()
-_router_engine: Optional[InferenceRouter] = None
+_router_engine: InferenceRouter | None = None
 
 
 def get_router():
@@ -49,6 +46,7 @@ async def status():
     engine = get_router()
     provider_health = await engine.health()
     from superllm.models.registry import ModelRegistry
+
     registry = ModelRegistry.get_instance()
     stats = await registry.get_stats()
     return {

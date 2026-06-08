@@ -5,19 +5,19 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from superllm.config.settings import settings
-from superllm.server.routes.chat import router as chat_router
-from superllm.server.routes.models import router as models_router
-from superllm.server.routes.health import router as health_router
-from superllm.server.routes.config import router as config_router
-from superllm.server.routes.providers import router as providers_router
-from superllm.server.routes.conversations import router as conversations_router
+from superllm.server.middleware.auth import AuthMiddleware
 from superllm.server.routes.agents import router as agents_router
 from superllm.server.routes.audio import router as audio_router
+from superllm.server.routes.chat import router as chat_router
+from superllm.server.routes.config import router as config_router
+from superllm.server.routes.conversations import router as conversations_router
 from superllm.server.routes.embeddings import router as embeddings_router
-from superllm.server.middleware.auth import AuthMiddleware
-from superllm.ui.server import mount_ui
+from superllm.server.routes.health import router as health_router
+from superllm.server.routes.models import router as models_router
+from superllm.server.routes.providers import router as providers_router
 from superllm.storage.db import Database
 from superllm.storage.models import Base
+from superllm.ui.server import mount_ui
 
 
 def create_app() -> FastAPI:
@@ -86,7 +86,6 @@ def run():
 
 
 def run_dev():
-    import sys
     uvicorn.run(
         "superllm.server.app:create_app",
         host=settings.host,

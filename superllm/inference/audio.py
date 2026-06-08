@@ -48,10 +48,12 @@ class AudioInferenceEngine(InferenceEngine):
             return
         try:
             import whisper
+
             self._whisper = whisper.load_model(model_size, device=self._config.device)
         except ImportError:
             try:
                 from faster_whisper import WhisperModel
+
                 self._faster_whisper = WhisperModel(
                     model_size_or_path=model_size,
                     device=self._config.device,
@@ -69,13 +71,17 @@ class AudioInferenceEngine(InferenceEngine):
         if model == "bark":
             try:
                 from bark import SAMPLE_RATE, generate_audio, preload_models
+
                 preload_models()
                 self._tts = {"type": "bark", "generate": generate_audio, "sample_rate": SAMPLE_RATE}
             except ImportError:
-                raise RuntimeError("Bark not installed. Run: pip install 'git+https://github.com/suno-ai/bark.git'")
+                raise RuntimeError(
+                    "Bark not installed. Run: pip install 'git+https://github.com/suno-ai/bark.git'"
+                )
         elif model == "xtts":
             try:
                 from TTS.api import TTS
+
                 self._tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2", gpu=False)
                 self._tts = {"type": "xtts", "model": self._tts}
             except ImportError:
@@ -103,11 +109,13 @@ class AudioInferenceEngine(InferenceEngine):
                 )
                 segments = []
                 for seg in result.get("segments", []):
-                    segments.append({
-                        "start": seg.get("start", 0),
-                        "end": seg.get("end", 0),
-                        "text": seg.get("text", "").strip(),
-                    })
+                    segments.append(
+                        {
+                            "start": seg.get("start", 0),
+                            "end": seg.get("end", 0),
+                            "text": seg.get("text", "").strip(),
+                        }
+                    )
                 elapsed = (time.time() - start) * 1000
                 return {
                     "text": result.get("text", "").strip(),
@@ -121,11 +129,13 @@ class AudioInferenceEngine(InferenceEngine):
                 seg_list = []
                 for seg in segments:
                     text_parts.append(seg.text)
-                    seg_list.append({
-                        "start": seg.start,
-                        "end": seg.end,
-                        "text": seg.text.strip(),
-                    })
+                    seg_list.append(
+                        {
+                            "start": seg.start,
+                            "end": seg.end,
+                            "text": seg.text.strip(),
+                        }
+                    )
                 elapsed = (time.time() - start) * 1000
                 return {
                     "text": " ".join(text_parts).strip(),
@@ -144,15 +154,18 @@ class AudioInferenceEngine(InferenceEngine):
 
         if self._tts["type"] == "bark":
             import numpy as np
+
             audio_array = self._tts["generate"](text)
             sample_rate = self._tts["sample_rate"]
             buf = io.BytesIO()
             try:
                 import scipy.io.wavfile as wavfile
+
                 wavfile.write(buf, sample_rate, (audio_array * 32767).astype(np.int16))
             except ImportError:
                 import wave
-                with wave.open(buf, 'wb') as wf:
+
+                with wave.open(buf, "wb") as wf:
                     wf.setnchannels(1)
                     wf.setsampwidth(2)
                     wf.setframerate(sample_rate)

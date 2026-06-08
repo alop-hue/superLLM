@@ -7,11 +7,9 @@ try:
     import readline  # noqa: F401 — improves input() line editing (Unix)
 except ImportError:
     pass  # Windows doesn't have readline; input() still works
-from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.markdown import Markdown
 
 from superllm.inference.base import InferenceRequest
 from superllm.inference.router import InferenceRouter, RoutingStrategy
@@ -25,12 +23,16 @@ def _show_help():
     console.print("[bold]Commands:[/bold]")
     console.print("  [cyan]/exit[/cyan], [cyan]/quit[/cyan], [cyan]/q[/cyan]  Exit the chat")
     console.print("  [cyan]/clear[/cyan], [cyan]/cls[/cyan]          Clear the screen")
-    console.print("  [cyan]/help[/cyan], [cyan]/h[/cyan], [cyan]/?[/cyan]       Show this help message")
+    console.print(
+        "  [cyan]/help[/cyan], [cyan]/h[/cyan], [cyan]/?[/cyan]       Show this help message"
+    )
     console.print("  [cyan]/info[/cyan]               Show model information")
     console.print("  [cyan]/raw[/cyan]                Toggle raw text output (default: formatted)")
     console.print()
     console.print("[bold]Tips:[/bold]")
-    console.print("  Use [cyan]\"\"\"[/cyan] to start multi-line input, end with [cyan]\"\"\"[/cyan] on its own line")
+    console.print(
+        '  Use [cyan]"""[/cyan] to start multi-line input, end with [cyan]"""[/cyan] on its own line'  # noqa: E501
+    )
     console.print("  Press [bold]Ctrl+C[/bold] or [bold]Ctrl+D[/bold] to exit")
 
 
@@ -48,7 +50,7 @@ async def _show_model_info(model_name: str):
         console.print(f"  Context: {card.context_length} tokens")
         console.print(f"  Source: {card.source}")
     if installed:
-        console.print(f"  [green]✓ Installed[/green]")
+        console.print("  [green]✓ Installed[/green]")
         console.print(f"  Path: {installed.path}")
     console.print()
 
@@ -77,19 +79,21 @@ def _show_cloud_suggestions(model: str):
     if card:
         if card.source == "cloud":
             console.print(f"[yellow]Model '{model}' is a cloud-only model.[/yellow]")
-            console.print(f"  Use [bold]--cloud[/bold] flag or set SUPERLLM_MODE=cloud")
+            console.print("  Use [bold]--cloud[/bold] flag or set SUPERLLM_MODE=cloud")
             return
     cloud_alternatives = ModelLibrary.search(f"{model}:cloud")
     if cloud_alternatives:
-        console.print(f"  Cloud alternative: [bold]{cloud_alternatives[0].name}[/bold] (use --cloud)")
+        console.print(
+            f"  Cloud alternative: [bold]{cloud_alternatives[0].name}[/bold] (use --cloud)"
+        )
 
     similar = ModelLibrary.search(model)
     if similar:
-        console.print(f"  Similar available models:")
+        console.print("  Similar available models:")
         for s in similar[:5]:
             if s.source != "cloud":
                 console.print(f"    [bold]{s.name}[/bold] ({s.recommended_ram or 'unknown RAM'})")
-        console.print(f"  Run [bold]superllm pull <model>[/bold] to download one")
+        console.print("  Run [bold]superllm pull <model>[/bold] to download one")
 
 
 async def _do_run(
@@ -97,9 +101,9 @@ async def _do_run(
     local: bool = False,
     cloud: bool = False,
     auto: bool = False,
-    system: Optional[str] = None,
+    system: str | None = None,
     temperature: float = 0.7,
-    max_tokens: Optional[int] = None,
+    max_tokens: int | None = None,
 ):
     registry = ModelRegistry.get_instance()
     is_cloud_model = ":cloud" in model or cloud
@@ -107,6 +111,7 @@ async def _do_run(
 
     if is_auto:
         from superllm.inference.smart_router import SmartRouter
+
         router = SmartRouter()
     else:
         router = InferenceRouter()
@@ -139,12 +144,12 @@ async def _do_run(
 
     display_model = model if not is_auto else "auto (smart router)"
     console.print()
-    console.print(f"[bold cyan]╭─ superLLM chat ───────────────────────────────╮")
+    console.print("[bold cyan]╭─ superLLM chat ───────────────────────────────╮")
     console.print(f"│ Model: {display_model}")
     if system:
         console.print(f"│ System: {system[:50]}{'...' if len(system) > 50 else ''}")
-    console.print(f"│ Type [bold]/help[/bold] for commands, [bold]/exit[/bold] to quit")
-    console.print(f"╰──────────────────────────────────────────────────╯")
+    console.print("│ Type [bold]/help[/bold] for commands, [bold]/exit[/bold] to quit")
+    console.print("╰──────────────────────────────────────────────────╯")
     console.print()
 
     raw_mode = False
@@ -162,7 +167,6 @@ async def _do_run(
         if user_input.startswith("/"):
             parts = user_input[1:].strip().split(maxsplit=1)
             cmd = parts[0].lower()
-            args = parts[1] if len(parts) > 1 else ""
 
             if cmd in ("exit", "quit", "q"):
                 break
@@ -177,7 +181,9 @@ async def _do_run(
                 continue
             elif cmd == "raw":
                 raw_mode = not raw_mode
-                console.print(f"  Raw mode: {'[green]on[/green]' if raw_mode else '[yellow]off[/yellow]'}")
+                console.print(
+                    f"  Raw mode: {'[green]on[/green]' if raw_mode else '[yellow]off[/yellow]'}"
+                )
                 continue
             else:
                 console.print(f"[yellow]Unknown command: /{cmd}[/yellow]")
@@ -217,13 +223,17 @@ async def _do_run(
 
 
 def run_cmd(
-    model: str = typer.Argument("auto", help="Model name to chat with (use 'auto' for smart routing)"),
+    model: str = typer.Argument(
+        "auto", help="Model name to chat with (use 'auto' for smart routing)"
+    ),
     local: bool = typer.Option(False, "--local", "-l", help="Force local inference"),
     cloud: bool = typer.Option(False, "--cloud", "-c", help="Force cloud inference"),
     auto: bool = typer.Option(False, "--auto", "-a", help="Smart auto-routing based on task"),
-    system: Optional[str] = typer.Option(None, "--system", "-s", help="System prompt"),
+    system: str | None = typer.Option(None, "--system", "-s", help="System prompt"),
     temperature: float = typer.Option(0.7, "--temperature", "-t", help="Temperature (0.0-2.0)"),
-    max_tokens: Optional[int] = typer.Option(None, "--max-tokens", "-m", help="Max tokens to generate"),
+    max_tokens: int | None = typer.Option(
+        None, "--max-tokens", "-m", help="Max tokens to generate"
+    ),
 ):
     """Start an interactive chat with a model (like 'ollama run'). Use 'auto' for model."""
     asyncio.run(

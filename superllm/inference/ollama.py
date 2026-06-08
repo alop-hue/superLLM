@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import asyncio
 import time
 from collections.abc import AsyncGenerator
-from typing import Optional
 
 import httpx
 
@@ -29,10 +27,10 @@ class OllamaInferenceEngine(InferenceEngine):
       `base_url` and payload shape if your local server differs.
     """
 
-    def __init__(self, base_url: Optional[str] = None, api_key: Optional[str] = None):
+    def __init__(self, base_url: str | None = None, api_key: str | None = None):
         self._client = None
         self._base_url = base_url or "http://localhost:11434"
-        self._http: Optional[httpx.AsyncClient] = None
+        self._http: httpx.AsyncClient | None = None
         self._api_key = api_key
 
     @property
@@ -73,11 +71,17 @@ class OllamaInferenceEngine(InferenceEngine):
         try:
             if self._client is not None:
                 # Using hypothetical ollama client API - check your installed client docs
-                resp = self._client.run(model=resolved_model, prompt=prompt, max_tokens=request.max_tokens)
+                resp = self._client.run(
+                    model=resolved_model, prompt=prompt, max_tokens=request.max_tokens
+                )
                 content = getattr(resp, "text", str(resp))
             else:
                 # HTTP fallback - many Ollama-compatible servers accept a POST to /run
-                payload = {"model": resolved_model, "prompt": prompt, "max_tokens": request.max_tokens}
+                payload = {
+                    "model": resolved_model,
+                    "prompt": prompt,
+                    "max_tokens": request.max_tokens,
+                }
                 r = await self._http.post(f"{self._base_url}/run", json=payload)
                 r.raise_for_status()
                 data = r.json()
@@ -104,16 +108,30 @@ class OllamaInferenceEngine(InferenceEngine):
         if self._client is not None:
             # If client supports streaming, user should implement here.
             # For now, return single full response.
-            resp = self._client.run(model=resolved_model, prompt=prompt, max_tokens=request.max_tokens)
+            resp = self._client.run(
+                model=resolved_model, prompt=prompt, max_tokens=request.max_tokens
+            )
             yield getattr(resp, "text", str(resp))
             return
 
         # HTTP streaming fallback (server must support chunked responses)
         headers = {"Authorization": f"Bearer {self._api_key}"} if self._api_key else {}
-        async with httpx.AsyncClient(timeout=settings.cloud_request_timeout, headers=headers) as client:
-            payload = {"model": resolved_model, "prompt": prompt, "max_tokens": request.max_tokens, "stream": True}
+        async with httpx.AsyncClient(
+            timeout=settings.cloud_request_timeout, headers=headers
+        ) as client:
+            payload = {
+                "model": resolved_model,
+                "prompt": prompt,
+                "max_tokens": request.max_tokens,
+                "stream": True,
+            }
             try:
-                async with client.stream("POST", f"{self._base_url}/run", json=payload, timeout=settings.cloud_request_timeout) as r:
+                async with client.stream(
+                    "POST",
+                    f"{self._base_url}/run",
+                    json=payload,
+                    timeout=settings.cloud_request_timeout,
+                ) as r:
                     r.raise_for_status()
                     async for chunk in r.aiter_text():
                         if chunk:

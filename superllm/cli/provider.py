@@ -1,24 +1,22 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import typer
 from rich.console import Console
 from rich.table import Table
 
-from superllm.providers.registry import registry
 from superllm.providers.base import Provider
+from superllm.providers.registry import registry
 
 console = Console()
 
 
 def providers_cmd(
-    action: Optional[str] = typer.Argument(None, help="Action: list, add, remove"),
-    name: Optional[str] = typer.Option(None, "--name", "-n", help="Provider name"),
-    type: Optional[str] = typer.Option(None, "--type", "-t", help="Provider type"),
-    url: Optional[str] = typer.Option(None, "--url", "-u", help="Base URL"),
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="Default model"),
-    api_key: Optional[str] = typer.Option(None, "--api-key", help="Provider API key"),
+    action: str | None = typer.Argument(None, help="Action: list, add, remove"),
+    name: str | None = typer.Option(None, "--name", "-n", help="Provider name"),
+    type: str | None = typer.Option(None, "--type", "-t", help="Provider type"),
+    url: str | None = typer.Option(None, "--url", "-u", help="Base URL"),
+    model: str | None = typer.Option(None, "--model", "-m", help="Default model"),
+    api_key: str | None = typer.Option(None, "--api-key", help="Provider API key"),
     enabled: bool = typer.Option(True, "--enabled/--disabled", help="Enable/disable"),
 ):
     """Manage inference providers."""
@@ -28,7 +26,9 @@ def providers_cmd(
         providers = await registry.get_providers()
         if not providers:
             console.print("No providers configured.")
-            console.print("Add one with: [bold]superllm providers add --name openai --type openai[/bold]")
+            console.print(
+                "Add one with: [bold]superllm providers add --name openai --type openai[/bold]"
+            )
             return
 
         table = Table(title="Configured Providers")
@@ -59,6 +59,7 @@ def providers_cmd(
             raise typer.Exit(1)
 
         from superllm.config.settings import ProviderType
+
         if type not in [t.value for t in ProviderType]:
             valid = ", ".join([t.value for t in ProviderType])
             console.print(f"[red]Invalid type. Valid types: {valid}[/red]")
@@ -151,6 +152,7 @@ def providers_cmd(
 
     async def do_types():
         from superllm.config.settings import ProviderType
+
         table = Table(title="Available Provider Types")
         table.add_column("Type", style="cyan")
         table.add_column("Description")
@@ -178,7 +180,9 @@ def providers_cmd(
             table.add_row(t.value, descriptions.get(t.value, ""))
         console.print(table)
         console.print()
-        console.print("[dim]Add: [bold]superllm providers add --name my-provider --type <type> --url <url> --api-key <key>[/bold][/dim]")
+        console.print(
+            "[dim]Add: [bold]superllm providers add --name my-provider --type <type> --url <url> --api-key <key>[/bold][/dim]"  # noqa: E501
+        )
 
     if action == "list" or action is None:
         asyncio.run(do_list())
@@ -193,4 +197,6 @@ def providers_cmd(
     elif action == "types":
         asyncio.run(do_types())
     else:
-        console.print(f"[red]Unknown action: {action}. Use: list, add, remove, discover, test, types[/red]")
+        console.print(
+            f"[red]Unknown action: {action}. Use: list, add, remove, discover, test, types[/red]"
+        )

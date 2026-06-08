@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import contextlib
-from pathlib import Path
-from typing import AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
-    AsyncSession,
     AsyncEngine,
+    AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
@@ -20,15 +19,15 @@ class Base(DeclarativeBase):
 
 
 class Database:
-    _instance: Optional[Database] = None
+    _instance: Database | None = None
 
-    def __init__(self, database_url: Optional[str] = None):
+    def __init__(self, database_url: str | None = None):
         self.database_url = database_url or settings.database_url
-        self._engine: Optional[AsyncEngine] = None
-        self._session_factory: Optional[async_sessionmaker[AsyncSession]] = None
+        self._engine: AsyncEngine | None = None
+        self._session_factory: async_sessionmaker[AsyncSession] | None = None
 
     @classmethod
-    def get_instance(cls, database_url: Optional[str] = None) -> Database:
+    def get_instance(cls, database_url: str | None = None) -> Database:
         if cls._instance is None:
             cls._instance = cls(database_url)
         return cls._instance

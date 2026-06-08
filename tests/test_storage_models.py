@@ -1,4 +1,4 @@
-from superllm.storage.models import InstalledModel, Conversation, Message
+from superllm.storage.models import Conversation, InstalledModel, Message
 
 
 def test_installed_model_to_dict():

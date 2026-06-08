@@ -46,8 +46,8 @@ class TaskClassifier:
     ]
 
     REASONING_PATTERNS = [
-        r"\b(explain|reason|why|how does|analyze|compare|contrast)\b.*\b(concept|theory|principle|relativity|quantum|evolution|consciousness)\b",
-        r"\b(explain|describe|what is)\s+(the\s+)?(relativity|quantum|evolution|consciousness|string theory|dark matter|black hole)\b",
+        r"\b(explain|reason|why|how does|analyze|compare|contrast)\b.*\b(concept|theory|principle|relativity|quantum|evolution|consciousness)\b",  # noqa: E501
+        r"\b(explain|describe|what is)\s+(the\s+)?(relativity|quantum|evolution|consciousness|string theory|dark matter|black hole)\b",  # noqa: E501
         r"\b(solve|calculate|compute|evaluate|derive)\b",
         r"\b(what is|explain)\s+(the\s+)?(difference|relationship|connection)\b",
         r"\b(step[-\s]by[-\s]step|chain[-\s]of[-\s]thought)\b",
@@ -134,7 +134,13 @@ class TaskClassifier:
         if "embed" in text.lower() or "vector" in text.lower() or "semantic search" in text.lower():
             scores[TaskType.EMBEDDINGS] += 3
 
-        rag_words = ["rag", "retrieval augmented", "knowledge base", "document search", "hybrid search"]
+        rag_words = [
+            "rag",
+            "retrieval augmented",
+            "knowledge base",
+            "document search",
+            "hybrid search",
+        ]
         if any(w in text.lower() for w in rag_words):
             scores[TaskType.RAG] += 3
 
@@ -151,7 +157,9 @@ class TaskClassifier:
             return TaskType.RAG
         if scores[TaskType.AGENT] > 0:
             return TaskType.AGENT
-        if scores[TaskType.MATH] > 0 and scores[TaskType.MATH] >= max(scores[TaskType.CODE], scores[TaskType.REASONING]):
+        if scores[TaskType.MATH] > 0 and scores[TaskType.MATH] >= max(
+            scores[TaskType.CODE], scores[TaskType.REASONING]
+        ):
             return TaskType.MATH
         if scores[TaskType.CODE] >= 2:
             return TaskType.CODE
@@ -250,6 +258,7 @@ class SmartRouter(InferenceEngine):
     async def _is_model_installed(self, model_name: str) -> bool:
         try:
             from superllm.models.registry import ModelRegistry
+
             registry = ModelRegistry.get_instance()
             installed = await registry.get_model(model_name)
             return installed is not None
@@ -266,6 +275,7 @@ class SmartRouter(InferenceEngine):
             if is_installed:
                 return model_name, "local"
             from superllm.models.library import ModelLibrary
+
             card = ModelLibrary.get_model(model_name)
             if card and card.source != "cloud":
                 return model_name, "local"
@@ -295,7 +305,9 @@ class SmartRouter(InferenceEngine):
                 cloud_candidates = ModelLibrary.recommend_for_task(task.value, max_ram=999)
                 cloud_candidates = [m for m in cloud_candidates if m.source == "cloud"]
                 if cloud_candidates:
-                    cloud_scored = [(self.classifier.score_model_for_task(task, m), m) for m in cloud_candidates]
+                    cloud_scored = [
+                        (self.classifier.score_model_for_task(task, m), m) for m in cloud_candidates
+                    ]
                     cloud_scored.sort(key=lambda x: (-x[0], x[1].name))
                     best_cloud = cloud_scored[0][1]
                     if cloud_scored[0][0] > scored[0][0] * 1.5:
@@ -311,8 +323,9 @@ class SmartRouter(InferenceEngine):
     async def _cloud_fallback_model(self, original: str) -> str:
         if ":cloud" in original or "/" in original:
             return original
-        cloud_candidates = [m for m in ModelLibrary.get_cloud_models()
-                          if m.capabilities.get("chat", False)]
+        cloud_candidates = [
+            m for m in ModelLibrary.get_cloud_models() if m.capabilities.get("chat", False)
+        ]
         if cloud_candidates:
             return cloud_candidates[0].name
         return "qwen2.5-72b:cloud"
@@ -340,9 +353,7 @@ class SmartRouter(InferenceEngine):
                     )
             raise
 
-    async def chat_stream(
-        self, request: InferenceRequest
-    ) -> AsyncGenerator[str, None]:
+    async def chat_stream(self, request: InferenceRequest) -> AsyncGenerator[str, None]:
         model_name, engine_type = await self._select_model(request)
         request.model = model_name
 

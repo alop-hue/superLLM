@@ -26,8 +26,7 @@ class Tool(ABC):
     parameters: dict = field(default_factory=dict)
 
     @abstractmethod
-    async def execute(self, **kwargs) -> ToolResult:
-        ...
+    async def execute(self, **kwargs) -> ToolResult: ...
 
     def to_openai_tool(self) -> dict:
         return {
@@ -49,7 +48,7 @@ class AgentMemory:
     def add_message(self, role: str, content: str):
         self.messages.append({"role": role, "content": content})
         if len(self.messages) > self.max_messages:
-            self.messages = [self.messages[0]] + self.messages[-(self.max_messages - 1):]
+            self.messages = [self.messages[0]] + self.messages[-(self.max_messages - 1) :]
 
     def get_context(self) -> list[dict]:
         if self.system_prompt and (not self.messages or self.messages[0].get("role") != "system"):
@@ -78,9 +77,7 @@ class AgentExecutor:
         self.memory.system_prompt = system_prompt or self._default_system_prompt()
 
     def _default_system_prompt(self) -> str:
-        tools_desc = "\n".join(
-            f"  - {t.name}: {t.description}" for t in self.tools
-        )
+        tools_desc = "\n".join(f"  - {t.name}: {t.description}" for t in self.tools)
         return f"""You are a capable AI assistant with access to the following tools:
 
 {tools_desc}
@@ -127,9 +124,7 @@ When you have the final answer, respond normally without the tool block."""
             error=f"Unknown tool: {name}",
         )
 
-    async def run(
-        self, user_input: str, stream: bool = False
-    ) -> str | AsyncGenerator[str, None]:
+    async def run(self, user_input: str, stream: bool = False) -> str | AsyncGenerator[str, None]:
         self.memory.add_message("user", user_input)
 
         if stream:

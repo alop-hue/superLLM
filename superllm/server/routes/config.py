@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from superllm.config.settings import settings, Mode
+from superllm.config.settings import Mode, settings
 
 router = APIRouter()
 
@@ -30,16 +28,16 @@ async def get_config():
 
 
 class ConfigUpdate(BaseModel):
-    mode: Optional[str] = None
-    debug: Optional[bool] = None
-    host: Optional[str] = None
-    port: Optional[int] = None
-    local_inference: Optional[bool] = None
-    cloud_routing: Optional[bool] = None
-    cloud_fallback: Optional[bool] = None
-    auth_enabled: Optional[bool] = None
-    ui_enabled: Optional[bool] = None
-    default_model: Optional[str] = None
+    mode: str | None = None
+    debug: bool | None = None
+    host: str | None = None
+    port: int | None = None
+    local_inference: bool | None = None
+    cloud_routing: bool | None = None
+    cloud_fallback: bool | None = None
+    auth_enabled: bool | None = None
+    ui_enabled: bool | None = None
+    default_model: str | None = None
 
 
 @router.post("/config")

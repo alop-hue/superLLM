@@ -3,7 +3,6 @@ from __future__ import annotations
 import enum
 import os
 from pathlib import Path
-from typing import Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -73,17 +72,14 @@ class Settings(BaseSettings):
 
     # Paths
     data_dir: Path = Field(
-        default_factory=lambda: Path(
-            os.environ.get("SUPERLLM_DATA_DIR", Path.home() / ".superllm")
-        )
+        default_factory=lambda: Path(os.environ.get("SUPERLLM_DATA_DIR", Path.home() / ".superllm"))
     )
     models_dir: Path = Field(
         default_factory=lambda: Path(
-            os.environ.get("SUPERLLM_MODELS_DIR")
-            or str(Path.home() / ".superllm" / "models")
+            os.environ.get("SUPERLLM_MODELS_DIR") or str(Path.home() / ".superllm" / "models")
         )
     )
-    config_file: Optional[Path] = None
+    config_file: Path | None = None
 
     # Local inference
     local_inference: bool = True
@@ -91,7 +87,7 @@ class Settings(BaseSettings):
     local_max_tokens: int = 4096
     local_n_ctx: int = 2048
     local_n_gpu_layers: int = 0
-    local_n_threads: Optional[int] = None
+    local_n_threads: int | None = None
     local_verbose: bool = False
 
     # Cloud
@@ -128,8 +124,8 @@ class Settings(BaseSettings):
 
     # Auth
     auth_enabled: bool = False
-    api_key: Optional[str] = None
-    jwt_secret: Optional[str] = None
+    api_key: str | None = None
+    jwt_secret: str | None = None
 
     # UI
     ui_enabled: bool = True
@@ -137,19 +133,17 @@ class Settings(BaseSettings):
     ui_port: int = 5173
 
     # Hugging Face
-    hf_token: Optional[str] = None
-    hf_username: Optional[str] = None
+    hf_token: str | None = None
+    hf_username: str | None = None
 
     # Providers
-    openai_api_key: Optional[str] = None
-    anthropic_api_key: Optional[str] = None
-    google_api_key: Optional[str] = None
+    openai_api_key: str | None = None
+    anthropic_api_key: str | None = None
+    google_api_key: str | None = None
 
     # Storage
     database_url: str = Field(
-        default_factory=lambda: (
-            f"sqlite+aiosqlite:///{Path.home() / '.superllm' / 'superllm.db'}"
-        )
+        default_factory=lambda: f"sqlite+aiosqlite:///{Path.home() / '.superllm' / 'superllm.db'}"
     )
 
     # Model defaults

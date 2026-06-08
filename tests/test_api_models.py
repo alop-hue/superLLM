@@ -1,8 +1,8 @@
-from pydantic import ValidationError
 import pytest
+from pydantic import ValidationError
 
-from superllm.server.routes.models import PullRequest
 from superllm.server.routes.chat import ChatRequest, Message
+from superllm.server.routes.models import PullRequest
 
 
 def test_pull_request_default():

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -22,7 +20,7 @@ class PullResponse(BaseModel):
     name: str
     status: str
     message: str
-    path: Optional[str] = None
+    path: str | None = None
 
 
 @router.get("/tags")
@@ -38,14 +36,18 @@ async def list_models():
 @router.get("/models/library")
 async def list_library(
     query: str = "",
-    category: Optional[str] = None,
-    tag: Optional[str] = None,
+    category: str | None = None,
+    tag: str | None = None,
 ):
     if query or category or tag:
         tags = [tag] if tag else None
         results = ModelLibrary.filter(category=category, tags=tags)
         if query:
-            results = [m for m in results if query.lower() in m.name.lower() or query.lower() in m.display_name.lower()]
+            results = [
+                m
+                for m in results
+                if query.lower() in m.name.lower() or query.lower() in m.display_name.lower()
+            ]
     else:
         results = ModelLibrary.search()
     return {
@@ -111,7 +113,7 @@ async def list_categories():
 async def recommend_models(
     task: str = "chat",
     max_ram: float = 32.0,
-    category: Optional[str] = None,
+    category: str | None = None,
 ):
     if task == "hardware":
         results = ModelLibrary.recommend_for_hardware(max_ram)
@@ -181,6 +183,7 @@ async def pull_model(request: PullRequest):
         raise HTTPException(status_code=400, detail=f"No download URL for model '{name}'")
 
     import httpx
+
     filename = f"{name.replace('.', '-')}-{quant}.gguf"
     models_dir = settings.models_dir
     models_dir.mkdir(parents=True, exist_ok=True)
@@ -199,15 +202,23 @@ async def pull_model(request: PullRequest):
         raise HTTPException(status_code=400, detail=f"Cannot resolve download URL for '{name}'")
 
     try:
-        async with httpx.AsyncClient(timeout=settings.model_pull_timeout, follow_redirects=True) as client:
+        async with httpx.AsyncClient(
+            timeout=settings.model_pull_timeout, follow_redirects=True
+        ) as client:
             head = await client.head(download_url)
             if head.status_code >= 400:
-                raise HTTPException(status_code=400, detail=f"Download URL returned {head.status_code}: {download_url}")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Download URL returned {head.status_code}: {download_url}",
+                )
             response = await client.get(download_url)
             response.raise_for_status()
             content = response.content
             if len(content) < 1024:
-                raise HTTPException(status_code=400, detail=f"Downloaded file is too small ({len(content)} bytes) - likely not a valid model file")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Downloaded file is too small ({len(content)} bytes) - likely not a valid model file",  # noqa: E501
+                )
             dest_path.write_bytes(content)
     except HTTPException:
         raise
@@ -251,27 +262,30 @@ async def openai_list_models():
     library_models = ModelLibrary.search()
     all_models = []
 
-    lib_names = {m.name for m in library_models}
     installed_names = {m.name for m in installed}
 
     for inst in installed:
-        all_models.append({
-            "id": inst.name,
-            "object": "model",
-            "created": int(inst.download_date.timestamp()) if inst.download_date else 0,
-            "owned_by": "superllm",
-            "capabilities": inst.capabilities or {},
-        })
+        all_models.append(
+            {
+                "id": inst.name,
+                "object": "model",
+                "created": int(inst.download_date.timestamp()) if inst.download_date else 0,
+                "owned_by": "superllm",
+                "capabilities": inst.capabilities or {},
+            }
+        )
 
     for lib in library_models:
         if lib.name not in installed_names:
-            all_models.append({
-                "id": lib.name,
-                "object": "model",
-                "created": 0,
-                "owned_by": "superllm",
-                "capabilities": lib.capabilities,
-            })
+            all_models.append(
+                {
+                    "id": lib.name,
+                    "object": "model",
+                    "created": 0,
+                    "owned_by": "superllm",
+                    "capabilities": lib.capabilities,
+                }
+            )
 
     return {
         "object": "list",

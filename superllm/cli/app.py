@@ -3,29 +3,29 @@ from __future__ import annotations
 import typer
 from rich.console import Console
 
-from superllm.cli.run import run_cmd
-from superllm.cli.serve import serve_cmd
-from superllm.cli.open import open_app
+from superllm.cli.auth import login_cmd, logout_cmd
+from superllm.cli.config import config_cmd
+from superllm.cli.hub import hub_cmd
 from superllm.cli.model import (
+    library_cmd,
+    list_cmd,
     pull_cmd,
     remove_cmd,
-    list_cmd,
     show_cmd,
-    library_cmd,
 )
+from superllm.cli.open import open_app
 from superllm.cli.provider import providers_cmd
-from superllm.cli.config import config_cmd
+from superllm.cli.run import run_cmd
+from superllm.cli.serve import serve_cmd
 from superllm.cli.system import (
-    install_cmd,
-    init_cmd,
-    start_cmd,
-    stop_cmd,
-    status_cmd,
-    logs_cmd,
     doctor_cmd,
+    init_cmd,
+    install_cmd,
+    logs_cmd,
+    start_cmd,
+    status_cmd,
+    stop_cmd,
 )
-from superllm.cli.hub import hub_cmd
-from superllm.cli.auth import login_cmd, logout_cmd
 
 console = Console()
 

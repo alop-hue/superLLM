@@ -40,6 +40,7 @@ async def create_embeddings(request: EmbeddingRequest):
 
     try:
         from superllm.models.library import ModelLibrary
+
         card = ModelLibrary.get_model(request.model)
         if not card or not card.capabilities.get("embeddings", False):
             raise HTTPException(
@@ -51,6 +52,7 @@ async def create_embeddings(request: EmbeddingRequest):
 
         try:
             from sentence_transformers import SentenceTransformer
+
             model_key = f"st_{request.model}"
             if model_key not in _EMBEDDING_CACHE:
                 _EMBEDDING_CACHE[model_key] = None
@@ -62,11 +64,13 @@ async def create_embeddings(request: EmbeddingRequest):
             embeddings = st_model.encode(texts, normalize_embeddings=True)
             data = []
             for i, emb in enumerate(embeddings):
-                data.append(EmbeddingData(
-                    object="embedding",
-                    index=i,
-                    embedding=emb.tolist() if isinstance(emb, np.ndarray) else emb,
-                ))
+                data.append(
+                    EmbeddingData(
+                        object="embedding",
+                        index=i,
+                        embedding=emb.tolist() if isinstance(emb, np.ndarray) else emb,
+                    )
+                )
             return EmbeddingResponse(
                 data=data,
                 model=request.model,
@@ -78,13 +82,15 @@ async def create_embeddings(request: EmbeddingRequest):
         except ImportError:
             try:
                 from llama_cpp import Llama
+
                 model_path = f"~/.superllm/models/{request.model}.gguf"
                 import os
+
                 expanded_path = os.path.expanduser(model_path)
                 if not os.path.exists(expanded_path):
                     raise HTTPException(
                         status_code=404,
-                        detail=f"Embedding model '{request.model}' not found locally. Pull it first.",
+                        detail=f"Embedding model '{request.model}' not found locally. Pull it first.",  # noqa: E501
                     )
                 llm = Llama(
                     model_path=expanded_path,
@@ -94,11 +100,13 @@ async def create_embeddings(request: EmbeddingRequest):
                 data = []
                 for i, text in enumerate(texts):
                     emb = llm.create_embedding(text)
-                    data.append(EmbeddingData(
-                        object="embedding",
-                        index=i,
-                        embedding=emb["data"][0]["embedding"],
-                    ))
+                    data.append(
+                        EmbeddingData(
+                            object="embedding",
+                            index=i,
+                            embedding=emb["data"][0]["embedding"],
+                        )
+                    )
                 return EmbeddingResponse(
                     data=data,
                     model=request.model,
@@ -110,7 +118,7 @@ async def create_embeddings(request: EmbeddingRequest):
             except ImportError:
                 raise HTTPException(
                     status_code=500,
-                    detail="No embedding backend available. Install: pip install sentence-transformers",
+                    detail="No embedding backend available. Install: pip install sentence-transformers",  # noqa: E501
                 )
 
     except HTTPException:
@@ -122,6 +130,7 @@ async def create_embeddings(request: EmbeddingRequest):
 @router.get("/embeddings/models")
 async def list_embedding_models():
     from superllm.models.library import ModelLibrary
+
     emb_models = ModelLibrary.get_by_capability("embeddings")
     return {
         "models": [

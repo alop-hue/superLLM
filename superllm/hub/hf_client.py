@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-import json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 import httpx
 
 from superllm.config.settings import settings
-
 
 HF_API_BASE = "https://huggingface.co/api"
 HF_DL_BASE = "https://huggingface.co"
@@ -21,10 +18,10 @@ class HFModelInfo:
     author: str
     downloads: int
     likes: int
-    pipeline_tag: Optional[str] = None
+    pipeline_tag: str | None = None
     tags: list[str] = field(default_factory=list)
-    created_at: Optional[str] = None
-    trending_score: Optional[int] = None
+    created_at: str | None = None
+    trending_score: int | None = None
     siblings: list[dict] = field(default_factory=list)
     card_data: dict = field(default_factory=dict)
     is_gated: bool = False
@@ -60,8 +57,8 @@ class HFClient:
                 )
             if r.status_code == 401:
                 raise PermissionError(
-                    f"Hugging Face returned 401. Your token may be invalid or expired.\n"
-                    f"Run: superllm config set hf_token YOUR_TOKEN"
+                    "Hugging Face returned 401. Your token may be invalid or expired.\n"
+                    "Run: superllm config set hf_token YOUR_TOKEN"
                 )
             if r.status_code == 404:
                 return None
@@ -137,16 +134,18 @@ class HFClient:
 
         results = []
         for item in data:
-            results.append(HFModelInfo(
-                id=item["modelId"],
-                author=item.get("author", ""),
-                downloads=item.get("downloads", 0),
-                likes=item.get("likes", 0),
-                pipeline_tag=item.get("pipeline_tag"),
-                tags=item.get("tags", []),
-                created_at=item.get("createdAt"),
-                is_gated=item.get("gated", False) is not False,
-            ))
+            results.append(
+                HFModelInfo(
+                    id=item["modelId"],
+                    author=item.get("author", ""),
+                    downloads=item.get("downloads", 0),
+                    likes=item.get("likes", 0),
+                    pipeline_tag=item.get("pipeline_tag"),
+                    tags=item.get("tags", []),
+                    created_at=item.get("createdAt"),
+                    is_gated=item.get("gated", False) is not False,
+                )
+            )
         return results
 
     @staticmethod
@@ -170,9 +169,7 @@ class HFClient:
             return 7
         return 8
 
-    def resolve_gguf_url(
-        self, model_name: str, preferred_quant: str = "Q4_K_M"
-    ) -> str | None:
+    def resolve_gguf_url(self, model_name: str, preferred_quant: str = "Q4_K_M") -> str | None:
         if "/" in model_name and not model_name.startswith("https://"):
             repo_id = model_name
         else:
@@ -202,12 +199,12 @@ class HFClient:
 
         return f"{HF_DL_BASE}/{repo_id}/resolve/main/{chosen}"
 
-    def find_gguf_model(
-        self, query: str, preferred_quant: str = "Q4_K_M"
-    ) -> list[dict]:
+    def find_gguf_model(self, query: str, preferred_quant: str = "Q4_K_M") -> list[dict]:
         results = self.search_models(query=query, sort="downloads", limit=30)
         if not results:
-            results = self.search_models(query=query, author="bartowski", sort="downloads", limit=10)
+            results = self.search_models(
+                query=query, author="bartowski", sort="downloads", limit=10
+            )
         matches = []
         for m in results:
             if not m.gguf_files:
@@ -221,15 +218,17 @@ class HFClient:
                 best_quant = m.gguf_files[0]
             if best_quant:
                 dl_url = f"{HF_DL_BASE}/{m.id}/resolve/main/{best_quant}"
-                matches.append({
-                    "id": m.id,
-                    "downloads": m.downloads,
-                    "likes": m.likes,
-                    "quant": best_quant,
-                    "url": dl_url,
-                    "pipeline_tag": m.pipeline_tag,
-                    "is_gated": m.is_gated,
-                })
+                matches.append(
+                    {
+                        "id": m.id,
+                        "downloads": m.downloads,
+                        "likes": m.likes,
+                        "quant": best_quant,
+                        "url": dl_url,
+                        "pipeline_tag": m.pipeline_tag,
+                        "is_gated": m.is_gated,
+                    }
+                )
         return matches
 
     def find_available_quants(self, repo_id: str) -> list[str]:
@@ -273,10 +272,12 @@ class HFClient:
         suggestions = []
         for m in results:
             if m.gguf_files:
-                suggestions.append({
-                    "id": m.id,
-                    "gguf_count": len(m.gguf_files),
-                    "downloads": m.downloads,
-                    "is_gated": m.is_gated,
-                })
+                suggestions.append(
+                    {
+                        "id": m.id,
+                        "gguf_count": len(m.gguf_files),
+                        "downloads": m.downloads,
+                        "is_gated": m.is_gated,
+                    }
+                )
         return suggestions[:5]

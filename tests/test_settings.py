@@ -1,4 +1,4 @@
-from superllm.config.settings import Settings, Mode
+from superllm.config.settings import Mode, Settings
 
 
 def test_default_mode_is_local():

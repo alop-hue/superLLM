@@ -6,7 +6,6 @@ import shutil
 import subprocess
 import sys
 import webbrowser
-from typing import Optional
 
 import httpx
 import typer
@@ -48,7 +47,7 @@ APP_DEFINITIONS: dict[str, dict] = {
 
 def _load_app_definitions() -> dict[str, dict]:
     import json
-    from pathlib import Path
+
     definitions = dict(APP_DEFINITIONS)
     custom_path = settings.data_dir / "apps.json"
     if custom_path.exists():
@@ -90,8 +89,9 @@ def _start_server() -> subprocess.Popen | None:
 
 async def _wait_for_server(timeout: int = 30) -> bool:
     import time
+
     start = time.time()
-    with console.status("[yellow]Waiting for server to start...[/yellow]") as status:
+    with console.status("[yellow]Waiting for server to start...[/yellow]"):
         while time.time() - start < timeout:
             if await _is_server_running():
                 return True
@@ -107,7 +107,9 @@ def _ensure_server():
             console.print("[red]Could not start server.[/red]")
             raise typer.Exit(1)
         if not asyncio.run(_wait_for_server()):
-            console.print("[red]Server failed to start in time. Check logs with 'superllm logs'[/red]")
+            console.print(
+                "[red]Server failed to start in time. Check logs with 'superllm logs'[/red]"
+            )
             raise typer.Exit(1)
         console.print("[green]Server is running.[/green]")
     return True
@@ -116,14 +118,16 @@ def _ensure_server():
 def _launch_app(app_name: str, model: str | None, extra_args: list[str] | None = None):
     app_def = _load_app_definitions().get(app_name)
     if not app_def:
-        console.print(f"[red]Unknown app: {app_name}. Use 'superllm open list' to see available apps.[/red]")
+        console.print(
+            f"[red]Unknown app: {app_name}. Use 'superllm open list' to see available apps.[/red]"
+        )
         raise typer.Exit(1)
 
     binary = _find_app(app_def["binary"])
     if not binary:
         console.print(f"[red]'{app_def['binary']}' not found in PATH.[/red]")
         console.print(f"  {app_def['description']}")
-        console.print(f"  Install it first, then try again.")
+        console.print("  Install it first, then try again.")
         raise typer.Exit(1)
 
     if app_def.get("needs_server") and model:
@@ -173,9 +177,9 @@ open_app = typer.Typer(
 @open_app.callback(invoke_without_command=True)
 def open_default(
     ctx: typer.Context,
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="Model to pre-select in the UI"),
-    host: Optional[str] = typer.Option(None, "--host", help="Server host"),
-    port: Optional[int] = typer.Option(None, "--port", "-p", help="Server port"),
+    model: str | None = typer.Option(None, "--model", "-m", help="Model to pre-select in the UI"),
+    host: str | None = typer.Option(None, "--host", help="Server host"),
+    port: int | None = typer.Option(None, "--port", "-p", help="Server port"),
 ):
     """Open the superLLM web UI in your browser."""
     if ctx.invoked_subcommand is not None:
@@ -220,7 +224,7 @@ def open_list():
 
 @open_app.command("opencode")
 def open_opencode(
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="Model to use"),
+    model: str | None = typer.Option(None, "--model", "-m", help="Model to use"),
 ):
     """Launch opencode with a superLLM model."""
     _launch_app("opencode", model)
@@ -228,7 +232,7 @@ def open_opencode(
 
 @open_app.command("openclaw")
 def open_openclaw(
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="Model to use"),
+    model: str | None = typer.Option(None, "--model", "-m", help="Model to use"),
 ):
     """Launch openclaw with a superLLM model."""
     _launch_app("openclaw", model)
@@ -236,7 +240,7 @@ def open_openclaw(
 
 @open_app.command("claude-code")
 def open_claude_code(
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="Model to use"),
+    model: str | None = typer.Option(None, "--model", "-m", help="Model to use"),
 ):
     """Launch claude-code with a superLLM model."""
     _launch_app("claude-code", model)
@@ -244,7 +248,7 @@ def open_claude_code(
 
 @open_app.command("aider")
 def open_aider(
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="Model to use"),
+    model: str | None = typer.Option(None, "--model", "-m", help="Model to use"),
 ):
     """Launch aider with a superLLM model."""
     _launch_app("aider", model)
@@ -252,9 +256,9 @@ def open_aider(
 
 def open_cmd(
     ctx: typer.Context,
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="Model to pre-select in the UI"),
-    host: Optional[str] = typer.Option(None, "--host", help="Server host"),
-    port: Optional[int] = typer.Option(None, "--port", "-p", help="Server port"),
+    model: str | None = typer.Option(None, "--model", "-m", help="Model to pre-select in the UI"),
+    host: str | None = typer.Option(None, "--host", help="Server host"),
+    port: int | None = typer.Option(None, "--port", "-p", help="Server port"),
 ):
     """Legacy callback - delegates to new group-based open."""
     open_default(ctx, model=model, host=host, port=port)

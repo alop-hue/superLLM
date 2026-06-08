@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 import datetime
-from typing import Optional
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     DateTime,
-    Float,
     ForeignKey,
     Integer,
     String,
     Text,
-    JSON,
+)
+from sqlalchemy import (
     Enum as SAEnum,
 )
 from sqlalchemy.orm import relationship
@@ -85,7 +85,9 @@ class Conversation(Base):
     provider = Column(String(50), default="local")
     mode = Column(String(10), default="local")
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    updated_at = Column(
+        DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
+    )
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
 
     def to_dict(self) -> dict:
@@ -95,7 +97,9 @@ class Conversation(Base):
             "model": self.model,
             "provider": self.provider,
             "mode": self.mode,
-            "message_count": len(self.messages) if hasattr(self, "messages") and self.messages is not None else 0,
+            "message_count": len(self.messages)
+            if hasattr(self, "messages") and self.messages is not None
+            else 0,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -105,7 +109,9 @@ class Message(Base):
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    conversation_id = Column(Integer, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False)
+    conversation_id = Column(
+        Integer, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False
+    )
     role = Column(String(20), nullable=False)
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
@@ -160,4 +166,6 @@ class Setting(Base):
 
     key = Column(String(255), primary_key=True)
     value = Column(Text, nullable=True)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    updated_at = Column(
+        DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
+    )

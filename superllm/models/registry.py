@@ -1,37 +1,32 @@
 from __future__ import annotations
 
 import hashlib
-import shutil
 from pathlib import Path
-from typing import Optional
 
-from sqlalchemy import select, func, delete as sa_delete
+from sqlalchemy import func, select
 
-from superllm.config.settings import settings
 from superllm.storage.db import Database
 from superllm.storage.models import InstalledModel
 
 
 class ModelRegistry:
-    _instance: Optional[ModelRegistry] = None
+    _instance: ModelRegistry | None = None
 
-    def __init__(self, database: Optional[Database] = None):
+    def __init__(self, database: Database | None = None):
         self._db = database or Database.get_instance()
 
     @classmethod
-    def get_instance(cls, database: Optional[Database] = None) -> ModelRegistry:
+    def get_instance(cls, database: Database | None = None) -> ModelRegistry:
         if cls._instance is None:
             cls._instance = cls(database)
         return cls._instance
 
     async def list_installed(self) -> list[InstalledModel]:
         async with self._db.session() as session:
-            result = await session.execute(
-                select(InstalledModel).order_by(InstalledModel.name)
-            )
+            result = await session.execute(select(InstalledModel).order_by(InstalledModel.name))
             return list(result.scalars().all())
 
-    async def get_model(self, name: str) -> Optional[InstalledModel]:
+    async def get_model(self, name: str) -> InstalledModel | None:
         async with self._db.session() as session:
             result = await session.execute(
                 select(InstalledModel).where(InstalledModel.name == name)
@@ -43,12 +38,12 @@ class ModelRegistry:
         name: str,
         path: Path,
         model_type: str = "gguf",
-        architecture: Optional[str] = None,
-        parameter_count: Optional[str] = None,
+        architecture: str | None = None,
+        parameter_count: str | None = None,
         context_length: int = 2048,
-        quant: Optional[str] = None,
-        tags: Optional[list[str]] = None,
-        capabilities: Optional[dict] = None,
+        quant: str | None = None,
+        tags: list[str] | None = None,
+        capabilities: dict | None = None,
     ) -> InstalledModel:
         size_bytes = path.stat().st_size if path.exists() else 0
         sha256 = self._compute_hash(path) if path.exists() else None
@@ -105,17 +100,15 @@ class ModelRegistry:
 
     async def search_models(
         self,
-        query: Optional[str] = None,
-        tags: Optional[list[str]] = None,
-        min_params: Optional[str] = None,
-        max_params: Optional[str] = None,
+        query: str | None = None,
+        tags: list[str] | None = None,
+        min_params: str | None = None,
+        max_params: str | None = None,
     ) -> list[InstalledModel]:
         async with self._db.session() as session:
             stmt = select(InstalledModel)
             if query:
-                stmt = stmt.where(
-                    InstalledModel.name.ilike(f"%{query}%")
-                )
+                stmt = stmt.where(InstalledModel.name.ilike(f"%{query}%"))
             if tags:
                 for tag in tags:
                     stmt = stmt.where(InstalledModel.tags.contains(tag))
@@ -125,9 +118,7 @@ class ModelRegistry:
 
     async def get_stats(self) -> dict:
         async with self._db.session() as session:
-            count_result = await session.execute(
-                select(func.count(InstalledModel.id))
-            )
+            count_result = await session.execute(select(func.count(InstalledModel.id)))
             total = count_result.scalar() or 0
             size_result = await session.execute(
                 select(func.coalesce(func.sum(InstalledModel.size_bytes), 0))
@@ -147,6 +138,7 @@ class ModelRegistry:
             model = result.scalar_one_or_none()
             if model:
                 import datetime
+
                 model.last_used = datetime.datetime.utcnow()
                 model.use_count = (model.use_count or 0) + 1
 

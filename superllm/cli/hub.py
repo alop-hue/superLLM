@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import typer
 from rich.console import Console
+from rich.prompt import Prompt
 from rich.table import Table
-from rich.prompt import Prompt, IntPrompt
 
 console = Console()
 
 
 def _save_env_token(token: str):
     from pathlib import Path
+
     key = "SUPERLLM_HF_TOKEN"
     env_path = Path.cwd() / ".env"
     if env_path.exists():
@@ -56,7 +55,9 @@ def _interactive_browse(client, results: list[dict]):
     while True:
         sorted_results = _show_results_table(results, 200)
         console.print()
-        console.print("[bold]Commands:[/bold] [cyan]#[/cyan] view details, [cyan]d #[/cyan] download, [cyan]q[/cyan] quit")
+        console.print(
+            "[bold]Commands:[/bold] [cyan]#[/cyan] view details, [cyan]d #[/cyan] download, [cyan]q[/cyan] quit"  # noqa: E501
+        )
         cmd = Prompt.ask("Select", default="q").strip().lower()
 
         if cmd == "q":
@@ -105,7 +106,7 @@ def _interactive_browse(client, results: list[dict]):
                 quant = f.replace(".gguf", "").split("-")[-1]
                 console.print(f"    {quant:12s} {f}{size}")
         else:
-            console.print(f"\n  [yellow]No GGUF files found in this repo.[/yellow]")
+            console.print("\n  [yellow]No GGUF files found in this repo.[/yellow]")
 
         action = Prompt.ask(
             "[bold]Actions[/bold]",
@@ -123,16 +124,21 @@ def _interactive_browse(client, results: list[dict]):
 
 def hub_cmd(
     query: str = typer.Argument("", help="Search query"),
-    pipeline: Optional[str] = typer.Option(None, "--pipeline", "-p", help="Filter by pipeline tag (text-generation, image-text-to-text, etc.)"),
+    pipeline: str | None = typer.Option(
+        None,
+        "--pipeline",
+        "-p",
+        help="Filter by pipeline tag (text-generation, image-text-to-text, etc.)",
+    ),
     limit: int = typer.Option(25, "--limit", "-l", help="Max results"),
-    info: Optional[str] = typer.Option(None, "--info", "-i", help="Show info for a specific model ID"),
+    info: str | None = typer.Option(None, "--info", "-i", help="Show info for a specific model ID"),
     token_status: bool = typer.Option(False, "--token-status", "-t", help="Check HF token status"),
     login: bool = typer.Option(False, "--login", help="Set HuggingFace token"),
     interactive: bool = typer.Option(False, "--interactive", "-I", help="Interactive browse mode"),
 ):
     """Browse and search HuggingFace Hub for GGUF models."""
-    from superllm.hub.hf_client import HFClient
     from superllm.config.settings import settings
+    from superllm.hub.hf_client import HFClient
 
     client = HFClient()
 
@@ -154,7 +160,7 @@ def hub_cmd(
         if ok:
             console.print(f"[green]✓ Token saved. {msg}[/green]")
         else:
-            console.print(f"[red]Invalid token.[/red]")
+            console.print("[red]Invalid token.[/red]")
         return
 
     if info:
@@ -183,11 +189,12 @@ def hub_cmd(
                 quant = f.replace(".gguf", "").split("-")[-1]
                 console.print(f"    {quant:12s} {f}{size}")
         else:
-            console.print(f"\n  [yellow]No GGUF files found in this repo.[/yellow]")
+            console.print("\n  [yellow]No GGUF files found in this repo.[/yellow]")
         return
 
     console.print(f"[dim]Searching HuggingFace Hub for '{query or 'popular GGUF models'}'...[/dim]")
     from superllm.models.library import ModelLibrary
+
     results = ModelLibrary.search_hub(query, pipeline_tag=pipeline, limit=limit)
 
     if not results:
@@ -201,7 +208,11 @@ def hub_cmd(
         return
 
     sorted_results = _show_results_table(results, limit)
-    console.print(f"\n[dim]Details: [bold]superllm hub --info {sorted_results[0]['id']}[/bold][/dim]")
-    console.print(f"[dim]Browse: [bold]superllm hub --interactive[/bold] for interactive mode[/dim]")
+    console.print(
+        f"\n[dim]Details: [bold]superllm hub --info {sorted_results[0]['id']}[/bold][/dim]"
+    )
+    console.print("[dim]Browse: [bold]superllm hub --interactive[/bold] for interactive mode[/dim]")
     console.print(f"[dim]Install: [bold]superllm pull {sorted_results[0]['id']}[/bold][/dim]")
-    console.print(f"[dim]Open UI: [bold]superllm open --model {sorted_results[0]['id']}[/bold][/dim]")
+    console.print(
+        f"[dim]Open UI: [bold]superllm open --model {sorted_results[0]['id']}[/bold][/dim]"
+    )

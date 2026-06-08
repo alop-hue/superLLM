@@ -1,5 +1,7 @@
-from superllm.inference.smart_router import TaskClassifier, SmartRouter
-from superllm.models.library import ModelLibrary, LITELLM_MODEL_MAP
+import pytest
+
+from superllm.inference.smart_router import SmartRouter, TaskClassifier
+from superllm.models.library import LITELLM_MODEL_MAP, ModelLibrary
 
 
 def test_task_classifier_chat():
@@ -11,8 +13,14 @@ def test_task_classifier_chat():
 
 def test_task_classifier_code():
     tc = TaskClassifier()
-    assert tc.classify([{"role": "user", "content": "write a python function to sort a list"}]).value == "code"
-    assert tc.classify([{"role": "user", "content": "implement a binary search in rust"}]).value == "code"
+    assert (
+        tc.classify([{"role": "user", "content": "write a python function to sort a list"}]).value
+        == "code"
+    )
+    assert (
+        tc.classify([{"role": "user", "content": "implement a binary search in rust"}]).value
+        == "code"
+    )
     assert tc.classify([{"role": "user", "content": "debug this function"}]).value == "code"
 
 
@@ -74,21 +82,24 @@ def test_litellm_map_count():
 
 
 def test_litellm_map_keys():
-    expected_keys = {"gpt-4o:cloud", "claude-3.5-sonnet:cloud", "gemini-2.0-flash:cloud",
-                     "deepseek-v3:cloud", "qwen2.5-72b:cloud"}
+    expected_keys = {
+        "gpt-4o:cloud",
+        "claude-3.5-sonnet:cloud",
+        "gemini-2.0-flash:cloud",
+        "deepseek-v3:cloud",
+        "qwen2.5-72b:cloud",
+    }
     assert expected_keys.issubset(LITELLM_MODEL_MAP.keys())
 
 
 def test_cloud_fallback_resolution():
     from superllm.inference.cloud import CloudInferenceEngine
+
     ce = CloudInferenceEngine()
     assert ce._resolve_model("qwen2-0.5b") == "together_ai/Qwen/Qwen2.5-72B-Instruct-Turbo"
     assert ce._resolve_model("deepseek-coder-33b") == "together_ai/deepseek-ai/DeepSeek-V3-0324"
     assert ce._resolve_model("gpt-4o:cloud") == "openai/gpt-4o"
     assert "/" in ce._resolve_model("llama3.2-1b")
-
-
-import pytest
 
 
 @pytest.mark.asyncio
@@ -100,6 +111,7 @@ async def test_smart_router_cloud_fallback():
 
 def test_resolve_download_url_all_local_models():
     from superllm.models.library import BUILTIN_LIBRARY
+
     urls_found = 0
     urls_missing = []
     for name, card in BUILTIN_LIBRARY.items():
@@ -107,7 +119,9 @@ def test_resolve_download_url_all_local_models():
             url = card.url or ModelLibrary.resolve_download_url(name)
             if url:
                 urls_found += 1
-                assert url.startswith("https://huggingface.co/"), f"Model '{name}' URL is not a HuggingFace URL: {url}"
+                assert url.startswith("https://huggingface.co/"), (
+                    f"Model '{name}' URL is not a HuggingFace URL: {url}"
+                )
             else:
                 urls_missing.append(name)
     assert urls_found >= 25, f"Only {urls_found} models have URLs; missing: {urls_missing[:10]}..."

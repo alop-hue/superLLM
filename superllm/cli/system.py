@@ -4,14 +4,12 @@ import asyncio
 import os
 import platform
 import sys
-from pathlib import Path
 
 import typer
 from rich.console import Console
 from rich.table import Table
-from rich.panel import Panel
 
-from superllm.config.settings import settings, Mode
+from superllm.config.settings import Mode, settings
 
 console = Console()
 
@@ -100,7 +98,7 @@ def start_cmd(
     if no_ui:
         settings.ui_enabled = False
 
-    console.print(f"[bold green]superLLM[/bold green] v0.1.0")
+    console.print("[bold green]superLLM[/bold green] v0.1.0")
     console.print(f"  Mode: [bold]{settings.mode.value}[/bold]")
     console.print(f"  Server: http://{settings.host}:{settings.port}")
     console.print(f"  Docs: http://{settings.host}:{settings.port}/docs")
@@ -109,6 +107,7 @@ def start_cmd(
     console.print(f"  UI: {'enabled' if settings.ui_enabled else 'disabled'}")
 
     from superllm.server.app import run
+
     run()
 
 
@@ -117,7 +116,7 @@ def stop_cmd():
     import httpx
 
     try:
-        response = httpx.get(f"http://{settings.host}:{settings.port}/api/shutdown", timeout=5)
+        httpx.get(f"http://{settings.host}:{settings.port}/api/shutdown", timeout=5)
         console.print("[green]Server stopped.[/green]")
     except Exception:
         console.print("[yellow]Could not connect to server. It may not be running.[/yellow]")
@@ -126,11 +125,10 @@ def stop_cmd():
 def status_cmd():
     """Show superLLM system status."""
     import httpx
-    import asyncio
 
     async def check():
-        console.print(f"[bold]superLLM Status[/bold]")
-        console.print(f"  Version: 0.1.0")
+        console.print("[bold]superLLM Status[/bold]")
+        console.print("  Version: 0.1.0")
         console.print(f"  Platform: {platform.system()} ({platform.machine()})")
         console.print(f"  Python: {sys.version.split()[0]}")
         console.print(f"  Data Dir: {settings.data_dir}")
@@ -145,37 +143,50 @@ def status_cmd():
                 )
                 if response.status_code == 200:
                     data = response.json()
-                    console.print(f"  Server: [green]Running[/green] on http://{settings.host}:{settings.port}")
+                    console.print(
+                        f"  Server: [green]Running[/green] on http://{settings.host}:{settings.port}"
+                    )
                     console.print(f"  Provider: {data.get('provider', '?')}")
-                    console.print(f"  Provider Healthy: [{'green' if data.get('provider_healthy') else 'red'}]{data.get('provider_healthy', '?')}[/]")
+                    console.print(
+                        f"  Provider Healthy: [{'green' if data.get('provider_healthy') else 'red'}]{data.get('provider_healthy', '?')}[/]"  # noqa: E501
+                    )
                     models = data.get("models", {})
-                    console.print(f"  Installed Models: {models.get('total_models', 0)} ({models.get('total_size_display', '0')})")
+                    console.print(
+                        f"  Installed Models: {models.get('total_models', 0)} ({models.get('total_size_display', '0')})"  # noqa: E501
+                    )
                 else:
-                    console.print(f"  Server: [yellow]Responding with {response.status_code}[/yellow]")
+                    console.print(
+                        f"  Server: [yellow]Responding with {response.status_code}[/yellow]"
+                    )
         except Exception:
-            console.print(f"  Server: [red]Not running[/red]")
-            console.print(f"  Start with: [bold]superllm start[/bold]")
+            console.print("  Server: [red]Not running[/red]")
+            console.print("  Start with: [bold]superllm start[/bold]")
 
         # Hardware detection
-        console.print(f"\n[bold]Hardware:[/bold]")
+        console.print("\n[bold]Hardware:[/bold]")
         import psutil
+
         console.print(f"  CPU: {psutil.cpu_count()} cores")
         mem = psutil.virtual_memory()
-        console.print(f"  RAM: {mem.total / (1024**3):.1f} GB total ({mem.available / (1024**3):.1f} GB free)")
+        console.print(
+            f"  RAM: {mem.total / (1024**3):.1f} GB total ({mem.available / (1024**3):.1f} GB free)"
+        )
         try:
             import GPUtil
+
             gpus = GPUtil.getGPUs()
             for gpu in gpus:
                 console.print(f"  GPU: {gpu.name} ({gpu.memoryFree}MB free)")
         except ImportError:
-            console.print(f"  GPU: [yellow]GPUtil not installed[/yellow]")
+            console.print("  GPU: [yellow]GPUtil not installed[/yellow]")
 
         # Installed models
         from superllm.models.registry import ModelRegistry
+
         registry = ModelRegistry.get_instance()
         models = await registry.list_installed()
         if models:
-            console.print(f"\n[bold]Installed Models:[/bold]")
+            console.print("\n[bold]Installed Models:[/bold]")
             for m in models:
                 console.print(f"  • {m.name} ({m._format_size(m.size_bytes)})")
 
@@ -201,7 +212,6 @@ def logs_cmd(
 
 def doctor_cmd():
     """Run system diagnostics to check superLLM health."""
-    import asyncio
     import importlib
 
     console.print("[bold]superLLM Diagnostics[/bold]")
@@ -211,7 +221,13 @@ def doctor_cmd():
 
     # Python version
     py_version = sys.version_info
-    checks.append(("Python >= 3.10", py_version.major >= 3 and py_version.minor >= 10, f"{py_version.major}.{py_version.minor}.{py_version.micro}"))
+    checks.append(
+        (
+            "Python >= 3.10",
+            py_version.major >= 3 and py_version.minor >= 10,
+            f"{py_version.major}.{py_version.minor}.{py_version.micro}",
+        )
+    )
 
     # Core dependencies
     for dep in ["typer", "fastapi", "uvicorn", "pydantic", "sqlalchemy", "httpx", "rich", "yaml"]:
@@ -222,16 +238,18 @@ def doctor_cmd():
             checks.append((f"Core: {dep}", False, "missing"))
 
     # Optional dependencies
-    try:
-        import llama_cpp
+    _llama_available = importlib.util.find_spec("llama_cpp") is not None
+    if _llama_available:
         checks.append(("Local: llama-cpp-python", True, "installed"))
-    except ImportError:
-        checks.append(("Local: llama-cpp-python", False, "not installed (run superllm install --local)"))
+    else:
+        checks.append(
+            ("Local: llama-cpp-python", False, "not installed (run superllm install --local)")
+        )
 
-    try:
-        import litellm
+    _litellm_available = importlib.util.find_spec("litellm") is not None
+    if _litellm_available:
         checks.append(("Cloud: litellm", True, "installed"))
-    except ImportError:
+    else:
         checks.append(("Cloud: litellm", False, "not installed (run superllm install --cloud)"))
 
     # Directories
@@ -259,6 +277,6 @@ def doctor_cmd():
     console.print(table)
 
     if all_pass:
-        console.print(f"\n[bold green]All checks passed![/bold green]")
+        console.print("\n[bold green]All checks passed![/bold green]")
     else:
-        console.print(f"\n[yellow]Some checks failed. See above for details.[/yellow]")
+        console.print("\n[yellow]Some checks failed. See above for details.[/yellow]")

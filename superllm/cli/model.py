@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import typer
 from rich.console import Console
 from rich.table import Table
-from rich.markdown import Markdown
 
 from superllm.config.settings import settings
+from superllm.models.library import ModelLibrary
+from superllm.models.registry import ModelRegistry
 
 
 def _write_env(key: str, value: str):
     """Write or update an env variable in the project's .env file."""
     import os
     from pathlib import Path
+
     env_path = Path.cwd() / ".env"
     key_upper = key.upper() if not key.startswith("SUPERLLM_") else key
     if env_path.exists():
@@ -30,23 +30,27 @@ def _write_env(key: str, value: str):
     else:
         env_path.write_text(f"{key_upper}={value}\n")
     os.environ[key_upper] = value
-from superllm.models.registry import ModelRegistry
-from superllm.models.library import ModelLibrary
+
 
 console = Console()
 registry = ModelRegistry.get_instance()
 
 
 def pull_cmd(
-    name: str = typer.Argument(..., help="Model name or HF repo ID (e.g. bartowski/Llama-3.2-1B-Instruct-GGUF)"),
+    name: str = typer.Argument(
+        ..., help="Model name or HF repo ID (e.g. bartowski/Llama-3.2-1B-Instruct-GGUF)"
+    ),
     quantization: str = typer.Option("Q4_K_M", "--quant", "-q", help="Quantization type"),
-    download_url: Optional[str] = typer.Option(None, "--download-url", "-u", help="Custom download URL"),
-    hf_token: Optional[str] = typer.Option(None, "--token", help="HuggingFace access token"),
+    download_url: str | None = typer.Option(
+        None, "--download-url", "-u", help="Custom download URL"
+    ),
+    hf_token: str | None = typer.Option(None, "--token", help="HuggingFace access token"),
 ):
     """Download a model from the library or HuggingFace Hub."""
-    import httpx
     import asyncio
-    from superllm.models.library import ModelLibrary
+
+    import httpx
+
     from superllm.hub.hf_client import HFClient
 
     card = ModelLibrary.get_model(name)
@@ -55,12 +59,12 @@ def pull_cmd(
     if not card and not is_hf_repo:
         console.print(f"[red]Model '{name}' not found in library.[/red]")
         console.print("Search HuggingFace Hub: [bold]superllm hub {name}[/bold]")
-        console.print("Or use a full HF repo ID: [bold]superllm pull bartowski/Llama-3.2-1B-Instruct-GGUF[/bold]")
+        console.print("Or use a full HF repo ID: [bold]superllm pull HF_USER/REPO[/bold]")
         raise typer.Exit(1)
 
     console.print(f"Pulling [bold]{name}[/bold] ({quantization})...")
     if card:
-        estimate = card.size_estimates.get(quantization, '')
+        estimate = card.size_estimates.get(quantization, "")
         if estimate:
             console.print(f"  Size estimate: {estimate} bytes")
         console.print(f"  Recommended RAM: {card.recommended_ram}")
@@ -93,16 +97,22 @@ def pull_cmd(
             raise typer.Exit(1)
 
         try:
-            async with httpx.AsyncClient(timeout=settings.model_pull_timeout, follow_redirects=True) as client:
+            async with httpx.AsyncClient(
+                timeout=settings.model_pull_timeout, follow_redirects=True
+            ) as client:
                 head_resp = await client.head(resolved_url)
                 if head_resp.status_code >= 400:
-                    console.print(f"[yellow]URL returns {head_resp.status_code}, may not exist.[/yellow]")
+                    console.print(
+                        f"[yellow]URL returns {head_resp.status_code}, may not exist.[/yellow]"
+                    )
                     if not download_url and not is_hf_repo:
                         suggestions = hf.get_suggestions(name)
                         if suggestions:
                             console.print("  Similar models on HF:")
                             for s in suggestions[:3]:
-                                console.print(f"    [bold]{s['id']}[/bold] ({s['gguf_count']} GGUF files)")
+                                console.print(
+                                    f"    [bold]{s['id']}[/bold] ({s['gguf_count']} GGUF files)"
+                                )
                     raise typer.Exit(1)
                 async with client.stream("GET", resolved_url) as response:
                     response.raise_for_status()
@@ -114,25 +124,25 @@ def pull_cmd(
                             downloaded += len(chunk)
                             if total:
                                 pct = (downloaded / total) * 100
-                                console.print(f"\r  Downloading: {pct:.1f}% ({downloaded / 1024 / 1024:.1f} MB / {total / 1024 / 1024:.1f} MB)", end="")
+                                dl_mb = downloaded / 1024 / 1024
+                                total_mb = total / 1024 / 1024
+                                line = f"\r  {pct:.1f}% ({dl_mb:.1f}/{total_mb:.1f} MB)"
+                                console.print(line, end="")
                             else:
-                                console.print(f"\r  Downloaded: {downloaded / 1024 / 1024:.1f} MB", end="")
+                                console.print(
+                                    f"\r  Downloaded: {downloaded / 1024 / 1024:.1f} MB", end=""
+                                )
                     console.print()
         except httpx.HTTPStatusError as e:
             if dest_path.exists():
                 dest_path.unlink()
             if e.response.status_code in (401, 403):
-                console.print(f"[red]Authentication required.[/red]")
+                console.print("[red]Authentication required.[/red]")
                 console.print("  This model may be gated or requires a HuggingFace token.")
                 console.print("  Set token: [bold]superllm hub --login[/bold]")
                 console.print(f"  Or: [bold]superllm pull {name} --token YOUR_TOKEN[/bold]")
             else:
                 console.print(f"[red]Download failed: {e}[/red]")
-            raise typer.Exit(1)
-        except HTTPException as e:
-            if dest_path.exists():
-                dest_path.unlink()
-            console.print(f"[red]Download failed: {e}[/red]")
             raise typer.Exit(1)
         except Exception as e:
             if dest_path.exists():
@@ -186,7 +196,9 @@ def remove_cmd(
 
 
 def list_cmd(
-    local: bool = typer.Option(False, "--local", "-l", help="Show local library models (downloadable)"),
+    local: bool = typer.Option(
+        False, "--local", "-l", help="Show local library models (downloadable)"
+    ),
     cloud: bool = typer.Option(False, "--cloud", "-c", help="Show cloud models"),
     installed: bool = typer.Option(False, "--installed", "-i", help="Show installed models"),
 ):
@@ -205,10 +217,11 @@ def list_cmd(
             table.add_column("Provider", style="yellow")
             table.add_column("Tags", style="blue")
             for m in sorted(results, key=lambda x: x.parameter_count):
-                table.add_row(m.name, m.parameter_count, m.provider or "-",
-                              ", ".join(m.tags[:3]))
+                table.add_row(m.name, m.parameter_count, m.provider or "-", ", ".join(m.tags[:3]))
             console.print(table)
-            console.print(f"\n[dim]Tip: Use [bold]superllm run {results[0].name}[/bold] to chat[/dim]")
+            console.print(
+                f"\n[dim]Tip: Use [bold]superllm run {results[0].name}[/bold] to chat[/dim]"
+            )
             return
 
         if local:
@@ -223,12 +236,19 @@ def list_cmd(
             table.add_column("Category", style="yellow")
             table.add_column("RAM", style="magenta")
             for m in sorted(results, key=lambda x: x.parameter_count)[:50]:
-                table.add_row(m.name, m.parameter_count, str(m.context_length),
-                              m.category, m.recommended_ram or "-")
+                table.add_row(
+                    m.name,
+                    m.parameter_count,
+                    str(m.context_length),
+                    m.category,
+                    m.recommended_ram or "-",
+                )
             console.print(table)
             if len(results) > 50:
-                console.print(f"\n[dim]Showing 50 of {len(results)} models. Use 'library' to search.[/dim]")
-            console.print(f"\n[dim]Tip: Run [bold]superllm pull <model>[/bold] to download[/dim]")
+                console.print(
+                    f"\n[dim]Showing 50 of {len(results)} models. Use 'library' to search.[/dim]"
+                )
+            console.print("\n[dim]Tip: Run [bold]superllm pull <model>[/bold] to download[/dim]")
             return
 
         models = await registry.list_installed()
@@ -260,7 +280,9 @@ def list_cmd(
         console.print(table)
 
         stats = await registry.get_stats()
-        console.print(f"\n[dim]Total: {stats['total_models']} models ({stats['total_size_display']})[/dim]")
+        console.print(
+            f"\n[dim]Total: {stats['total_models']} models ({stats['total_size_display']})[/dim]"
+        )
 
     asyncio.run(do_list())
 
@@ -306,7 +328,7 @@ def show_cmd(
             console.print(f"  Capabilities: {', '.join(cap_list)}")
 
         if card:
-            console.print(f"\n  [bold]Library Info:[/bold]")
+            console.print("\n  [bold]Library Info:[/bold]")
             console.print(f"  Description: {card.description}")
             console.print(f"  Category: {card.category}")
             console.print(f"  Recommended RAM: {card.recommended_ram}")
@@ -317,8 +339,8 @@ def show_cmd(
 
 def library_cmd(
     query: str = typer.Argument("", help="Search query"),
-    category: Optional[str] = typer.Option(None, "--category", "-c", help="Filter by category"),
-    tag: Optional[str] = typer.Option(None, "--tag", "-t", help="Filter by tag"),
+    category: str | None = typer.Option(None, "--category", "-c", help="Filter by category"),
+    tag: str | None = typer.Option(None, "--tag", "-t", help="Filter by tag"),
 ):
     """Browse the model library."""
     if category or tag:
@@ -349,4 +371,4 @@ def library_cmd(
             m.recommended_ram or "-",
         )
     console.print(table)
-    console.print(f"\n[dim]Tip: Run [bold]superllm pull <model>[/bold] to download[/dim]")
+    console.print("\n[dim]Tip: Run [bold]superllm pull <model>[/bold] to download[/dim]")

@@ -67,6 +67,7 @@ async def synthesize_speech(request: TTSRequest):
             language=request.language,
         )
         from fastapi.responses import Response
+
         return Response(
             content=audio_data,
             media_type="audio/wav",

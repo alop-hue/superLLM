@@ -13,10 +13,10 @@ from superllm.inference.base import (
 )
 from superllm.inference.cloud import CloudInferenceEngine
 from superllm.inference.local import LocalInferenceEngine
-from superllm.models.library import LITELLM_MODEL_MAP
 from superllm.inference.ollama import OllamaInferenceEngine
 from superllm.inference.openclaw import OpenClawInferenceEngine
 from superllm.inference.opencode import OpenCodeInferenceEngine
+from superllm.models.library import LITELLM_MODEL_MAP
 
 
 class RoutingStrategy:
@@ -65,22 +65,32 @@ class InferenceRouter(InferenceEngine):
             self._cloud = CloudInferenceEngine()
         return self._cloud
 
-    async def _get_ollama(self, base_url: str | None = None, api_key: str | None = None) -> OllamaInferenceEngine:
+    async def _get_ollama(
+        self, base_url: str | None = None, api_key: str | None = None
+    ) -> OllamaInferenceEngine:
         key = f"{base_url or 'default'}|{api_key or ''}"
         if key not in self._ollama_instances:
             self._ollama_instances[key] = OllamaInferenceEngine(base_url=base_url, api_key=api_key)
         return self._ollama_instances[key]
 
-    async def _get_openclaw(self, base_url: str | None = None, api_key: str | None = None) -> OpenClawInferenceEngine:
+    async def _get_openclaw(
+        self, base_url: str | None = None, api_key: str | None = None
+    ) -> OpenClawInferenceEngine:
         key = f"{base_url or 'default'}|{api_key or ''}"
         if key not in self._openclaw_instances:
-            self._openclaw_instances[key] = OpenClawInferenceEngine(base_url=base_url, api_key=api_key)
+            self._openclaw_instances[key] = OpenClawInferenceEngine(
+                base_url=base_url, api_key=api_key
+            )
         return self._openclaw_instances[key]
 
-    async def _get_opencode(self, base_url: str | None = None, api_key: str | None = None) -> OpenCodeInferenceEngine:
+    async def _get_opencode(
+        self, base_url: str | None = None, api_key: str | None = None
+    ) -> OpenCodeInferenceEngine:
         key = f"{base_url or 'default'}|{api_key or ''}"
         if key not in self._opencode_instances:
-            self._opencode_instances[key] = OpenCodeInferenceEngine(base_url=base_url, api_key=api_key)
+            self._opencode_instances[key] = OpenCodeInferenceEngine(
+                base_url=base_url, api_key=api_key
+            )
         return self._opencode_instances[key]
 
     async def _resolve_engine_and_model(self, model_name: str) -> tuple[InferenceEngine, str, str]:
@@ -181,6 +191,7 @@ class InferenceRouter(InferenceEngine):
 
     def _is_cloud_native(self, model_name: str) -> bool:
         from superllm.models.library import ModelLibrary
+
         card = ModelLibrary.get_model(model_name)
         if card and card.source == "cloud":
             return True
@@ -196,6 +207,7 @@ class InferenceRouter(InferenceEngine):
 
     def _default_cloud_for(self, model_name: str) -> str:
         from superllm.models.library import ModelLibrary
+
         card = ModelLibrary.get_model(model_name)
         if card:
             for tag in card.tags:
@@ -215,6 +227,7 @@ class InferenceRouter(InferenceEngine):
 
     async def _resolve_local_model(self, model_name: str) -> str | None:
         from superllm.models.registry import ModelRegistry
+
         registry = ModelRegistry.get_instance()
         installed = await registry.get_model(model_name)
         if installed:
@@ -223,17 +236,18 @@ class InferenceRouter(InferenceEngine):
 
     def _build_error_hint(self, model_name: str, local_err: Exception) -> str:
         from superllm.models.library import ModelLibrary
+
         card = ModelLibrary.get_model(model_name)
         hint = f"Model '{model_name}' is not available locally.\n"
         if card and card.source == "cloud":
-            hint += f"  → This is a cloud model. Use --cloud flag or add :cloud suffix.\n"
+            hint += "  → This is a cloud model. Use --cloud flag or add :cloud suffix.\n"
         elif card:
             hint += f"  → Run 'superllm pull {model_name}' to download it.\n"
             alt = self._resolve_cloud_model(model_name)
             if alt != model_name:
                 hint += f"  → Or use cloud fallback with: {alt}\n"
         else:
-            hint += f"  → Run 'superllm library' to find available models.\n"
+            hint += "  → Run 'superllm library' to find available models.\n"
         return f"{local_err}\n{hint}"
 
     async def chat(self, request: InferenceRequest) -> InferenceResponse:
@@ -249,13 +263,11 @@ class InferenceRouter(InferenceEngine):
                     return await cloud.chat(request)
                 except Exception as cloud_err:
                     raise RuntimeError(
-                        f"{self._build_error_hint(request.model, local_err)}Cloud fallback failed: {cloud_err}"
+                        f"{self._build_error_hint(request.model, local_err)}Cloud fallback failed: {cloud_err}"  # noqa: E501
                     )
             raise
 
-    async def chat_stream(
-        self, request: InferenceRequest
-    ) -> AsyncGenerator[str, None]:
+    async def chat_stream(self, request: InferenceRequest) -> AsyncGenerator[str, None]:
         engine, resolved_model, provider = await self._resolve_engine_and_model(request.model)
         request.model = resolved_model
         try:
@@ -270,7 +282,7 @@ class InferenceRouter(InferenceEngine):
                         yield chunk
                 except Exception as cloud_err:
                     raise RuntimeError(
-                        f"{self._build_error_hint(request.model, local_err)}Cloud fallback failed: {cloud_err}"
+                        f"{self._build_error_hint(request.model, local_err)}Cloud fallback failed: {cloud_err}"  # noqa: E501
                     )
             raise
 

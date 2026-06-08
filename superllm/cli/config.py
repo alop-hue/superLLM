@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -12,8 +10,8 @@ console = Console()
 
 
 def config_cmd(
-    key: Optional[str] = typer.Argument(None, help="Config key to get or set"),
-    value: Optional[str] = typer.Argument(None, help="Config value to set"),
+    key: str | None = typer.Argument(None, help="Config key to get or set"),
+    value: str | None = typer.Argument(None, help="Config value to set"),
     list_all: bool = typer.Option(False, "--list", "-l", help="List all config values"),
 ):
     """Get or set configuration values."""

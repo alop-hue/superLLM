@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import time
 from collections.abc import AsyncGenerator
-from typing import Optional
 
 import httpx
 
@@ -22,10 +21,10 @@ class OpenCodeInferenceEngine(InferenceEngine):
     Mirrors Ollama/OpenClaw adapter patterns.
     """
 
-    def __init__(self, base_url: Optional[str] = None):
+    def __init__(self, base_url: str | None = None):
         self._client = None
         self._base_url = base_url or "http://localhost:11436"
-        self._http: Optional[httpx.AsyncClient] = None
+        self._http: httpx.AsyncClient | None = None
 
     @property
     def name(self) -> str:
@@ -36,6 +35,7 @@ class OpenCodeInferenceEngine(InferenceEngine):
             return
         try:
             import opencode  # type: ignore
+
             self._client = opencode
         except Exception:
             self._http = httpx.AsyncClient(timeout=settings.cloud_request_timeout)
@@ -59,10 +59,16 @@ class OpenCodeInferenceEngine(InferenceEngine):
 
         try:
             if self._client is not None:
-                resp = self._client.run(model=resolved_model, prompt=prompt, max_tokens=request.max_tokens)
+                resp = self._client.run(
+                    model=resolved_model, prompt=prompt, max_tokens=request.max_tokens
+                )
                 content = getattr(resp, "text", str(resp))
             else:
-                payload = {"model": resolved_model, "prompt": prompt, "max_tokens": request.max_tokens}
+                payload = {
+                    "model": resolved_model,
+                    "prompt": prompt,
+                    "max_tokens": request.max_tokens,
+                }
                 r = await self._http.post(f"{self._base_url}/run", json=payload)
                 r.raise_for_status()
                 data = r.json()
@@ -86,14 +92,26 @@ class OpenCodeInferenceEngine(InferenceEngine):
         prompt = self._to_prompt(request.messages)
 
         if self._client is not None:
-            resp = self._client.run(model=resolved_model, prompt=prompt, max_tokens=request.max_tokens)
+            resp = self._client.run(
+                model=resolved_model, prompt=prompt, max_tokens=request.max_tokens
+            )
             yield getattr(resp, "text", str(resp))
             return
 
         async with httpx.AsyncClient(timeout=settings.cloud_request_timeout) as client:
-            payload = {"model": resolved_model, "prompt": prompt, "max_tokens": request.max_tokens, "stream": True}
+            payload = {
+                "model": resolved_model,
+                "prompt": prompt,
+                "max_tokens": request.max_tokens,
+                "stream": True,
+            }
             try:
-                async with client.stream("POST", f"{self._base_url}/run", json=payload, timeout=settings.cloud_request_timeout) as r:
+                async with client.stream(
+                    "POST",
+                    f"{self._base_url}/run",
+                    json=payload,
+                    timeout=settings.cloud_request_timeout,
+                ) as r:
                     r.raise_for_status()
                     async for chunk in r.aiter_text():
                         if chunk:

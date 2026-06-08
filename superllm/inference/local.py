@@ -31,6 +31,7 @@ class LocalInferenceEngine(InferenceEngine):
 
         try:
             from llama_cpp import Llama
+
             self._model = Llama(
                 model_path=model_path,
                 n_ctx=settings.local_n_ctx,
@@ -41,7 +42,7 @@ class LocalInferenceEngine(InferenceEngine):
             self._loaded = True
         except ImportError:
             raise RuntimeError(
-                "llama-cpp-python not installed. Run: .venv/bin/pip install 'superllm[local]' (or activate venv: source .venv/bin/activate)"
+                "llama-cpp-python not installed. Run: .venv/bin/pip install 'superllm[local]'"  # noqa: E501
             )
         except Exception as e:
             raise RuntimeError(f"Failed to load model: {e}")
@@ -50,6 +51,7 @@ class LocalInferenceEngine(InferenceEngine):
         if self._loaded and self._model:
             return
         from superllm.models.registry import ModelRegistry
+
         registry = ModelRegistry.get_instance()
         installed = await registry.get_model(request.model)
         if installed and installed.path:
@@ -89,9 +91,7 @@ class LocalInferenceEngine(InferenceEngine):
             total_time_ms=elapsed,
         )
 
-    async def chat_stream(
-        self, request: InferenceRequest
-    ) -> AsyncGenerator[str, None]:
+    async def chat_stream(self, request: InferenceRequest) -> AsyncGenerator[str, None]:
         await self._ensure_loaded(request)
 
         stream = self._model.create_chat_completion(
@@ -114,6 +114,7 @@ class LocalInferenceEngine(InferenceEngine):
 
     async def list_models(self) -> list[ModelInfo]:
         from superllm.models.registry import ModelRegistry
+
         registry = ModelRegistry.get_instance()
         models = await registry.list_installed()
         return [ModelInfo(id=m.name) for m in models]
@@ -124,7 +125,9 @@ class LocalInferenceEngine(InferenceEngine):
             if self._loaded and self._model:
                 latency = (time.time() - start) * 1000
                 return ProviderHealth(name="local", healthy=True, latency_ms=latency)
-            return ProviderHealth(name="local", healthy=False, latency_ms=0, error="No model loaded")
+            return ProviderHealth(
+                name="local", healthy=False, latency_ms=0, error="No model loaded"
+            )
         except Exception as e:
             latency = (time.time() - start) * 1000
             return ProviderHealth(name="local", healthy=False, latency_ms=latency, error=str(e))

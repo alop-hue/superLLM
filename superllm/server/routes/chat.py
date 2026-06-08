@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import time
-from typing import AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -12,7 +12,7 @@ from superllm.inference.base import InferenceRequest
 from superllm.inference.router import InferenceRouter
 
 router = APIRouter()
-_engine: Optional[InferenceRouter] = None
+_engine: InferenceRouter | None = None
 
 
 def get_engine():
@@ -32,7 +32,7 @@ class FileAttachment(BaseModel):
 class Message(BaseModel):
     role: str
     content: str
-    files: Optional[list[FileAttachment]] = None
+    files: list[FileAttachment] | None = None
 
 
 class ChatRequest(BaseModel):
@@ -40,20 +40,20 @@ class ChatRequest(BaseModel):
     messages: list[Message]
     stream: bool = False
     temperature: float = 0.7
-    max_tokens: Optional[int] = None
+    max_tokens: int | None = None
     top_p: float = 0.95
     top_k: int = 40
-    stop: Optional[list[str]] = None
+    stop: list[str] | None = None
     presence_penalty: float = 0.0
     frequency_penalty: float = 0.0
-    files: Optional[list[FileAttachment]] = None
+    files: list[FileAttachment] | None = None
 
 
 class ChatChoice(BaseModel):
     index: int = 0
-    message: Optional[dict] = None
-    delta: Optional[dict] = None
-    finish_reason: Optional[str] = None
+    message: dict | None = None
+    delta: dict | None = None
+    finish_reason: str | None = None
 
 
 class ChatUsage(BaseModel):
@@ -95,9 +95,7 @@ async def chat_completions(request: ChatRequest):
     )
 
     if request.stream:
-        return EventSourceResponse(
-            _stream_chat(engine, infer_request, request.model)
-        )
+        return EventSourceResponse(_stream_chat(engine, infer_request, request.model))
 
     try:
         response = await engine.chat(infer_request)

@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 
 from superllm.storage.db import Database
 from superllm.storage.models import Conversation, Message
@@ -24,18 +23,15 @@ class ConversationCreate(BaseModel):
 class MessageCreate(BaseModel):
     role: str
     content: str
-    tokens_in: Optional[int] = None
-    tokens_out: Optional[int] = None
+    tokens_in: int | None = None
+    tokens_out: int | None = None
 
 
 @router.get("/conversations")
 async def list_conversations(limit: int = 50, offset: int = 0):
     async with db.session() as session:
         result = await session.execute(
-            select(Conversation)
-            .order_by(desc(Conversation.updated_at))
-            .offset(offset)
-            .limit(limit)
+            select(Conversation).order_by(desc(Conversation.updated_at)).offset(offset).limit(limit)
         )
         convs = result.scalars().all()
         return {
@@ -63,9 +59,7 @@ async def create_conversation(create: ConversationCreate):
 @router.get("/conversations/{conv_id}")
 async def get_conversation(conv_id: int):
     async with db.session() as session:
-        result = await session.execute(
-            select(Conversation).where(Conversation.id == conv_id)
-        )
+        result = await session.execute(select(Conversation).where(Conversation.id == conv_id))
         conv = result.scalar_one_or_none()
         if not conv:
             raise HTTPException(status_code=404, detail="Conversation not found")
@@ -75,9 +69,7 @@ async def get_conversation(conv_id: int):
 @router.delete("/conversations/{conv_id}")
 async def delete_conversation(conv_id: int):
     async with db.session() as session:
-        result = await session.execute(
-            select(Conversation).where(Conversation.id == conv_id)
-        )
+        result = await session.execute(select(Conversation).where(Conversation.id == conv_id))
         conv = result.scalar_one_or_none()
         if not conv:
             raise HTTPException(status_code=404, detail="Conversation not found")
@@ -88,17 +80,13 @@ async def delete_conversation(conv_id: int):
 @router.get("/conversations/{conv_id}/messages")
 async def list_messages(conv_id: int):
     async with db.session() as session:
-        result = await session.execute(
-            select(Conversation).where(Conversation.id == conv_id)
-        )
+        result = await session.execute(select(Conversation).where(Conversation.id == conv_id))
         conv = result.scalar_one_or_none()
         if not conv:
             raise HTTPException(status_code=404, detail="Conversation not found")
 
         msg_result = await session.execute(
-            select(Message)
-            .where(Message.conversation_id == conv_id)
-            .order_by(Message.id)
+            select(Message).where(Message.conversation_id == conv_id).order_by(Message.id)
         )
         messages = msg_result.scalars().all()
         return {"messages": [m.to_dict() for m in messages], "total": len(messages)}
@@ -107,9 +95,7 @@ async def list_messages(conv_id: int):
 @router.post("/conversations/{conv_id}/messages")
 async def add_message(conv_id: int, msg: MessageCreate):
     async with db.session() as session:
-        result = await session.execute(
-            select(Conversation).where(Conversation.id == conv_id)
-        )
+        result = await session.execute(select(Conversation).where(Conversation.id == conv_id))
         conv = result.scalar_one_or_none()
         if not conv:
             raise HTTPException(status_code=404, detail="Conversation not found")

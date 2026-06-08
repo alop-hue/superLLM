@@ -27,11 +27,10 @@ class CloudInferenceEngine(InferenceEngine):
             return
         try:
             import litellm
+
             self._client = litellm
         except ImportError:
-            raise RuntimeError(
-                "litellm not installed. Run: pip install 'superllm[cloud]'"
-            )
+            raise RuntimeError("litellm not installed. Run: pip install 'superllm[cloud]'")
 
     def _resolve_model(self, model_name: str) -> str:
         if "/" in model_name and not model_name.startswith(":"):
@@ -95,9 +94,7 @@ class CloudInferenceEngine(InferenceEngine):
             total_time_ms=elapsed,
         )
 
-    async def chat_stream(
-        self, request: InferenceRequest
-    ) -> AsyncGenerator[str, None]:
+    async def chat_stream(self, request: InferenceRequest) -> AsyncGenerator[str, None]:
         await self._init_client()
         resolved_model = self._resolve_model(request.model)
 
