@@ -62,10 +62,10 @@ class AgentMemory:
 class AgentExecutor:
     def __init__(
         self,
-        tools: list[Tool] = None,
+        tools: list[Tool] | None = None,
         model: str = "auto",
         max_iterations: int = 5,
-        system_prompt: str = None,
+        system_prompt: str | None = None,
     ):
         self.tools = tools or []
         self.model = model
@@ -137,7 +137,7 @@ When you have the final answer, respond normally without the tool block."""
 
             agent_model = self.model
             if agent_model == "auto":
-                candidates = ModelLibrary.recommend_for_task("agent", max_ram=32.0)
+                candidates = ModelLibrary.recommend_for_task("agent", ram_gb=32.0)
                 if candidates:
                     agent_model = candidates[0].name
                 else:
@@ -178,7 +178,7 @@ When you have the final answer, respond normally without the tool block."""
 
             agent_model = self.model
             if agent_model == "auto":
-                candidates = ModelLibrary.recommend_for_task("agent", max_ram=32.0)
+                candidates = ModelLibrary.recommend_for_task("agent", ram_gb=32.0)
                 agent_model = candidates[0].name if candidates else "llama3.2-3b"
 
             request = InferenceRequest(

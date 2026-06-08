@@ -45,19 +45,19 @@ def _make(
     params: str,
     ctx: int,
     category: str = "general",
-    tags: list[str] = None,
-    caps: dict[str, bool] = None,
+    tags: list[str] | None = None,
+    caps: dict[str, bool] | None = None,
     source: str = "local",
-    provider: str = None,
-    ram: str = None,
-    sizes: dict[str, int] = None,
-    quants: list[str] = None,
-    url: str = None,
+    provider: str | None = None,
+    ram: str | None = None,
+    sizes: dict[str, int] | None = None,
+    quants: list[str] | None = None,
+    url: str | None = None,
     latency: str = "interactive",
-    strengths: list[str] = None,
-    weaknesses: list[str] = None,
+    strengths: list[str] | None = None,
+    weaknesses: list[str] | None = None,
     family: str = "",
-    hf_repo: str = None,
+    hf_repo: str | None = None,
 ) -> ModelCard:
     if tags is None:
         tags = []
@@ -624,7 +624,7 @@ class ModelLibrary:
         return BUILTIN_LIBRARY.get(name)
 
     @staticmethod
-    def filter(category: str = None, tags: list[str] = None) -> list[ModelCard]:
+    def filter(category: str | None = None, tags: list[str] | None = None) -> list[ModelCard]:
         results = list(BUILTIN_LIBRARY.values())
         if category:
             results = [m for m in results if m.category == category]
@@ -718,7 +718,7 @@ class ModelLibrary:
         return None
 
     @staticmethod
-    def search_hub(query: str, pipeline_tag: str = None, limit: int = 30) -> list[dict]:
+    def search_hub(query: str, pipeline_tag: str | None = None, limit: int = 30) -> list[dict]:
         """Search HuggingFace Hub for models with GGUF files."""
         from superllm.hub.hf_client import HFClient
 

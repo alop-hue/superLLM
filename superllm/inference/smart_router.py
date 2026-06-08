@@ -286,7 +286,7 @@ class SmartRouter(InferenceEngine):
 
         task = self.classifier.classify(request.messages)
 
-        local_candidates = ModelLibrary.recommend_for_task(task.value, max_ram=32.0)
+        local_candidates = ModelLibrary.recommend_for_task(task.value, ram_gb=32.0)
         local_candidates = [m for m in local_candidates if m.source != "cloud"]
 
         installed_local = []
@@ -302,7 +302,7 @@ class SmartRouter(InferenceEngine):
             best_local = scored[0][1]
 
             if settings.cloud_fallback and not installed_local:
-                cloud_candidates = ModelLibrary.recommend_for_task(task.value, max_ram=999)
+                cloud_candidates = ModelLibrary.recommend_for_task(task.value, ram_gb=999)
                 cloud_candidates = [m for m in cloud_candidates if m.source == "cloud"]
                 if cloud_candidates:
                     cloud_scored = [

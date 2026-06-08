@@ -47,7 +47,7 @@ class HFClient:
             return token_path.read_text().strip()
         return None
 
-    def _get(self, url: str, params: dict = None) -> dict | list:
+    def _get(self, url: str, params: dict | None = None) -> dict | list:
         with httpx.Client(follow_redirects=True, timeout=30) as c:
             r = c.get(url, headers=self._headers, params=params)
             if r.status_code == 401 and not self.token:
@@ -110,11 +110,11 @@ class HFClient:
     def search_models(
         self,
         query: str = "",
-        pipeline_tag: str = None,
+        pipeline_tag: str | None = None,
         sort: str = "downloads",
         direction: int = -1,
         limit: int = 50,
-        author: str = None,
+        author: str | None = None,
     ) -> list[HFModelInfo]:
         search_term = f"{query} GGUF" if query else "GGUF"
         params = {
