@@ -49,6 +49,15 @@ superllm list
 # Show model details
 superllm show llama-3.2-1b
 ```
+## Download the project as command tool
+
+```
+# Linux/macOS
+curl -fsSL https://raw.githubusercontent.com/alop-hue/superLLM/main/install.sh | sh
+
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/alop-hue/superLLM/main/install.ps1 | iex
+```
 
 ## CLI Reference
 
