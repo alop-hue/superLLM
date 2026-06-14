@@ -42,12 +42,6 @@ APP_DEFINITIONS: dict[str, dict] = {
         "env_prefix": "OPENAI",
         "needs_server": True,
     },
-    "supercode": {
-        "binary": "supercode",
-        "description": "AI coding agent, optimized for large repos (fork of opencode)",
-        "env_prefix": "OPENAI",
-        "needs_server": True,
-    },
 }
 
 
@@ -154,7 +148,7 @@ def _launch_app(app_name: str, model: str | None, extra_args: list[str] | None =
 
     cmd = [binary]
     if model:
-        if app_name in ("opencode", "openclaw", "supercode"):
+        if app_name in ("opencode", "openclaw"):
             cmd.extend(["--model", model])
         elif app_name == "aider":
             cmd.extend(["--model", f"openai/{model}"])
@@ -256,14 +250,6 @@ def open_aider(
 ):
     """Launch aider with a superLLM model."""
     _launch_app("aider", model)
-
-
-@open_app.command("supercode")
-def open_supercode(
-    model: str | None = typer.Option(None, "--model", "-m", help="Model to use"),
-):
-    """Launch supercode with a superLLM model."""
-    _launch_app("supercode", model)
 
 
 def open_cmd(
