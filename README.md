@@ -1,182 +1,162 @@
+<div align="center">
+
 # superLLM
 
-**Local-first and cloud-capable AI platform.** Run, manage, and serve models locally or in the cloud.
+**Local-first & cloud-capable AI platform**
 
-superLLM is not just a router to external providers — it is the actual system that serves models through its own API, manages its own model library, and runs inference locally or in the cloud.
+Run, manage, and serve AI models — locally on your machine or in the cloud — with a single tool.
 
-## Features
+[![Install](https://img.shields.io/badge/install-one_liner-blue?style=for-the-badge)](https://github.com/alop-hue/superLLM)
+[![Tests](https://img.shields.io/badge/tests-50_passing-green?style=for-the-badge)]()
 
-- **Local Mode** — Run models entirely on your machine. No cloud dependency.
-- **Cloud Mode** — Deploy the same stack to a server for production.
-- **Hybrid Mode** — Local-first routing with automatic cloud fallback.
-- **OpenAI-Compatible API** — Drop-in replacement for OpenAI clients.
-- **Rich CLI** — All operations available from the terminal.
-- **Web UI** — Modern interface on `localhost`.
-- **Provider Abstraction** — Local, OpenAI, Anthropic, and more.
-- **Model Library** — Searchable catalog of 10+ pre-configured models.
-- **Conversation History** — Persistent chat storage.
-- **Smart Routing** — Auto, local-first, cloud-first, fallback strategies.
+---
 
-## Quick Start
+</div>
+
+## Install
 
 ```bash
-# Install from source
-git clone https://github.com/superllm/superllm.git
-cd superllm
-pip install -e .
+curl -fsSL https://raw.githubusercontent.com/alop-hue/superLLM/main/install.sh | sh
+```
 
-# For local inference (llama-cpp-python)
-pip install -e ".[local]"
+*A single command. No dependencies. Works on Linux & macOS.*
 
-# For cloud routing (litellm)
-pip install -e ".[cloud]"
+> **Windows** — `irm https://raw.githubusercontent.com/alop-hue/superLLM/main/install.ps1 | iex`
 
-# Initialize
+---
+
+## Demo
+
+![superLLM Demo](assets/demo.gif)
+
+---
+
+## What is superLLM?
+
+superLLM is not just a router to external APIs — it **is** the system. It serves models through its own OpenAI-compatible API, manages a local model library, runs inference on your hardware, and can route to cloud providers when needed.
+
+### Quick Start
+
+```bash
+# Initialize configuration
 superllm init
-
-# Start the server
-superllm start
-
-# Open the UI
-open http://localhost:8080
 
 # Download a model
 superllm pull llama-3.2-1b
 
-# List installed models
-superllm list
+# Chat in terminal
+superllm run llama-3.2-1b
 
-# Show model details
-superllm show llama-3.2-1b
-```
-## Download the project as command tool
+# Start the server + web UI
+superllm start
 
+# Open in browser
+open http://localhost:8080
 ```
-# Linux/macOS
-curl -fsSL https://raw.githubusercontent.com/alop-hue/superLLM/main/install.sh | sh
 
-# Windows (PowerShell)
-irm https://raw.githubusercontent.com/alop-hue/superLLM/main/install.ps1 | iex
+### Use Cloud Models
+
+```bash
+# Add OpenAI
+superllm providers add --name openai --type openai --api-key sk-...
+
+# Add Anthropic
+superllm providers add --name claude --type anthropic --api-key sk-...
+
+# Add Google Gemini
+superllm providers add --name gemini --type google --api-key ...
+
+# List providers
+superllm providers list
 ```
+
+---
+
+## Features
+
+| Capability | Description |
+|---|---|
+| **Local Inference** | Run models on your hardware via llama.cpp (CPU/GPU) |
+| **Cloud Routing** | Route to OpenAI, Anthropic, Google, Groq, DeepSeek, Mistral, Together, xAI, and more |
+| **Hybrid Mode** | Auto: local-first, fallback to cloud when needed |
+| **OpenAI-Compatible API** | Drop-in replacement — use any OpenAI client |
+| **Smart Router** | Task-based routing: auto, local-first, cloud-first, fallback |
+| **Web UI** | Modern interface served from `localhost:8080` |
+| **Model Library** | 50+ pre-configured models, searchable catalog |
+| **Agents** | Tool-using agents with memory and iteration |
+| **Conversations** | Persistent chat history with SQLite |
+| **Audio** | Speech-to-text + text-to-speech support |
+
+---
 
 ## CLI Reference
 
-| Command | Description |
-|---------|-------------|
-| `superllm init` | Initialize configuration and directories |
-| `superllm start` | Start the API server (with optional web UI) |
-| `superllm serve` | Alias for start |
-| `superllm stop` | Stop the server |
-| `superllm status` | Show server status and diagnostics |
-| `superllm doctor` | Run system diagnostics |
-| `superllm pull <model>` | Download a model from the library |
-| `superllm remove <model>` | Delete an installed model |
-| `superllm list` | List installed models |
-| `superllm show <model>` | Show detailed model information |
-| `superllm library` | Browse the model library |
-| `superllm providers` | Manage inference providers |
-| `superllm config` | Get/set configuration values |
-| `superllm logs` | View server logs |
-| `superllm login` | Login to superLLM cloud |
-| `superllm logout` | Logout from superLLM cloud |
+```
+superllm init        Initialize configuration
+superllm start       Start the API server + web UI
+superllm pull        Download a model
+superllm run         Interactive chat in terminal
+superllm list        List installed models
+superllm providers   Manage cloud/local providers
+superllm library     Browse the model catalog
+superllm doctor      Run system diagnostics
+superllm config      Get/set configuration
+```
 
 ## API
 
-superLLM exposes an OpenAI-compatible API:
+superLLM is a drop-in OpenAI-compatible API:
 
 ```bash
-# Chat completion
 curl http://localhost:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "llama-3.2-1b",
-    "messages": [{"role": "user", "content": "Hello!"}],
-    "stream": true
+    "messages": [{"role": "user", "content": "Hello!"}]
   }'
-
-# List models
-curl http://localhost:8080/api/models
-
-# Health check
-curl http://localhost:8080/api/health
 ```
+
+---
+
+## Modes
+
+**Local** — Models run entirely on your machine. No internet needed after download.
+
+**Cloud** — Deploy to a server for production. Multi-user, auth, rate limiting.
+
+**Hybrid** — Local first. Cloud fallback when a model isn't available locally.
+
+---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
-│                    CLI (Typer)                    │
-├─────────────────────────────────────────────────┤
-│                 FastAPI Server                    │
-│  ┌──────┐ ┌──────┐ ┌──────┐ ┌───────────────┐  │
-│  │ Chat │ │Models│ │Config│ │ Conversations │  │
-│  └──────┘ └──────┘ └──────┘ └───────────────┘  │
-├─────────────────────────────────────────────────┤
-│              Inference Router                     │
-│  ┌─────────────────┐  ┌──────────────────────┐  │
-│  │ Local (llama.cpp) │  │ Cloud (LiteLLM)     │  │
-│  └─────────────────┘  └──────────────────────┘  │
-├─────────────────────────────────────────────────┤
-│  Model Registry  │  Provider Registry  │ Storage │
-├─────────────────────────────────────────────────┤
-│           SQLite (local) / PostgreSQL (cloud)    │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│              CLI (Typer)                  │
+├──────────────────────────────────────────┤
+│            FastAPI Server                 │
+├──────────────────────────────────────────┤
+│         Inference Router                  │
+│  ┌──────────────┐  ┌──────────────────┐  │
+│  │ Local (llama) │  │ Cloud (LiteLLM) │  │
+│  └──────────────┘  └──────────────────┘  │
+├──────────────────────────────────────────┤
+│  Models  │ Providers │ Conversations     │
+├──────────────────────────────────────────┤
+│         SQLite / PostgreSQL              │
+└──────────────────────────────────────────┘
 ```
 
-## Project Structure
-
-```
-superllm/
-├── superllm/           # Python package
-│   ├── cli/           # CLI commands
-│   ├── server/        # API server routes
-│   ├── inference/     # Inference engines
-│   ├── providers/     # Provider abstraction
-│   ├── models/        # Model registry & library
-│   ├── storage/       # Database layer
-│   ├── config/        # Settings
-│   └── ui/            # UI server
-├── ui/                 # React frontend
-├── tests/              # Test suite
-├── docs/               # Documentation
-└── examples/           # Usage examples
-```
-
-## Modes
-
-### Local Mode
-- Runs entirely on your machine
-- Models downloaded and executed locally
-- No internet required after initial download
-- CPU and GPU support via llama.cpp
-- Ideal for development, testing, and offline use
-
-### Cloud Mode
-- Deploy to any server or cloud GPU instance
-- Full multi-user support with auth
-- API key management
-- Rate limiting and quotas
-- Production-ready for team use
-
-### Hybrid Mode
-- Local models preferred, cloud fallback when unavailable
-- Smart routing: auto, local-first, cloud-first
-- Transparent failover between providers
+---
 
 ## Development
 
 ```bash
-# Install with dev dependencies
+git clone https://github.com/alop-hue/superLLM.git
+cd superLLM
 pip install -e ".[dev]"
-
-# Run tests
-pytest
-
-# Start in development mode
+pytest           # 50 tests, all passing
 superllm start --debug
-
-# Develop the UI
-cd ui && npm install && npm run dev
 ```
 
 ## License
