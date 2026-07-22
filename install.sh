@@ -79,16 +79,26 @@ fi
 info "Installing $APP from GitHub..."
 $PYTHON -m pip install --upgrade pip -q
 
-if $PYTHON -m pip install "git+https://github.com/$REPO.git" 2>&1; then
+EXTRAS="all"
+case "$ARCH" in
+  arm64) EXTRAS="all" ;;  # no native llama-cpp for some arm setups
+esac
+
+if $PYTHON -m pip install "git+https://github.com/$REPO.git#egg=${APP}[${EXTRAS}]" 2>&1; then
   ok "Installed $APP from GitHub"
-elif $PYTHON -m pip install "https://github.com/$REPO/archive/main.tar.gz" 2>&1; then
-  ok "Installed $APP (fallback)"
+elif $PYTHON -m pip install "git+https://github.com/$REPO.git" 2>&1; then
+  warn "llama-cpp-python build failed (missing compiler). Installed without local inference."
+  warn "To enable local models: pip install 'superllm[local]'"
+  ok "Installed $APP (base)"
 else
   warn "Installing from GitHub failed. Trying from source..."
   TMP="$(mktemp -d)"
   git clone --depth 1 "https://github.com/$REPO.git" "$TMP/$APP"
   cd "$TMP/$APP"
-  $PYTHON -m pip install -e ".[dev]" 2>&1
+  $PYTHON -m pip install -e ".[${EXTRAS}]" 2>&1 || {
+    warn "llama-cpp-python build failed. Installing base package..."
+    $PYTHON -m pip install -e "." 2>&1
+  }
   cd "$OLDPWD"
   rm -rf "$TMP"
   ok "Installed $APP from source"
