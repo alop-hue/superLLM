@@ -62,6 +62,18 @@ if ! $PYTHON -m pip --version &>/dev/null; then
   fail "pip not found. Install pip: $PYTHON -m ensurepip --upgrade"
 fi
 
+# --- detect externally-managed-environment (PEP 668) ---
+VENV_DIR=""
+if $PYTHON -m pip install --dry-run -q 2>&1 | grep -q "externally-managed-environment"; then
+  warn "System pip is restricted (PEP 668). Creating a virtual environment..."
+  VENV_DIR="$HOME/.local/share/$APP-venv"
+  if [ ! -d "$VENV_DIR" ]; then
+    $PYTHON -m venv "$VENV_DIR"
+  fi
+  PYTHON="$VENV_DIR/bin/python"
+  info "Using virtual environment: $VENV_DIR"
+fi
+
 # --- install ---
 info "Installing $APP from GitHub..."
 $PYTHON -m pip install --upgrade pip -q
@@ -81,10 +93,16 @@ else
   ok "Installed $APP from source"
 fi
 
+# --- add venv to PATH if used ---
+if [ -n "$VENV_DIR" ]; then
+  USER_BIN="$VENV_DIR/bin"
+else
+  USER_BIN="$("$PYTHON" -c 'import sysconfig; print(sysconfig.get_paths()["scripts"])')"
+fi
+
 # --- verify ---
 if ! command -v "$APP" &>/dev/null; then
   warn "$APP not in PATH. Adding..."
-  USER_BIN="$("$PYTHON" -c 'import sysconfig; print(sysconfig.get_paths()["scripts"])')"
   echo "export PATH=\"\$PATH:$USER_BIN\"" >> "$HOME/.bashrc"
   export PATH="$PATH:$USER_BIN"
 fi
