@@ -75,6 +75,30 @@ if [ -f "$PY_MARKER" ]; then
   info "Using virtual environment: $VENV_DIR"
 fi
 
+# --- ensure build tools for llama-cpp ---
+NEED_BUILD=false
+if ! command -v gcc >/dev/null 2>&1; then NEED_BUILD=true; fi
+if ! command -v cmake >/dev/null 2>&1; then NEED_BUILD=true; fi
+
+if [ "$NEED_BUILD" = true ]; then
+  warn "Missing build tools (gcc/cmake) needed for local model support."
+  TOOLS_OK=false
+  if [ "$OS" = "linux" ]; then
+    if command -v apt >/dev/null 2>&1; then
+      if sudo -n true 2>/dev/null; then
+        info "Installing build-essential and cmake..."
+        sudo apt update -qq 2>/dev/null && sudo apt install -y -qq build-essential cmake 2>/dev/null && TOOLS_OK=true
+      else
+        warn "sudo not available non-interactively. To enable local models, run:"
+        warn "  sudo apt install build-essential cmake"
+      fi
+    fi
+  elif [ "$OS" = "macos" ]; then
+    xcode-select --install 2>/dev/null || true
+    TOOLS_OK=true
+  fi
+fi
+
 # --- install ---
 info "Installing $APP from GitHub..."
 $PYTHON -m pip install --upgrade pip -q
@@ -88,10 +112,10 @@ cd "$TMP/$APP"
 if $PYTHON -m pip install -e ".[all]" 2>&1; then
   ok "Installed $APP with all features (local + cloud + audio)"
 else
-  warn "llama-cpp-python build failed (needs gcc/cmake). Installing without local inference..."
+  warn "llama-cpp-python build failed. Installing without local inference..."
   $PYTHON -m pip install -e ".[cloud,audio,embeddings,agents]" 2>&1 || \
     $PYTHON -m pip install -e "." 2>&1
-  warn "To enable local models, install build tools and run: pip install 'superllm[local]'"
+  warn "To enable local models, run: pip install 'superllm[local]'"
 fi
 
 cd "$OLDPWD"
