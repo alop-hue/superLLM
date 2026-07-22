@@ -89,7 +89,7 @@ if $PYTHON -m pip install -e ".[all]" 2>&1; then
   ok "Installed $APP with all features (local + cloud + audio)"
 else
   warn "llama-cpp-python build failed (needs gcc/cmake). Installing without local inference..."
-  $PYTHON -m pip install -e ".[cloud,audio,tts,embeddings,agents]" 2>&1 || \
+  $PYTHON -m pip install -e ".[cloud,audio,embeddings,agents]" 2>&1 || \
     $PYTHON -m pip install -e "." 2>&1
   warn "To enable local models, install build tools and run: pip install 'superllm[local]'"
 fi
